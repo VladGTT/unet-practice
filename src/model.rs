@@ -6,28 +6,72 @@ use burn::{
     },
     prelude::*,
 };
+use nn::{conv::{ConvTranspose2d, ConvTranspose2dConfig}, pool::{MaxPool2d, MaxPool2dConfig}};
+
+#[derive(Module, Debug)]
+pub struct Encoder<B: Backend> {
+    conv1: Conv2d<B>,
+    conv2: Conv2d<B>,
+    activation: Relu,
+    pool: MaxPool2d,
+}
+
+impl<B: Backend> Encoder<B> {
+    pub fn init(&self, device: &B::Device,channels: usize) -> Encoder<B> {
+        Encoder { 
+            conv1: Conv2dConfig::new([1, channels], [3, 3]).init(device),
+            conv2: Conv2dConfig::new([channels, channels], [3, 3]).init(device),
+            activation: Relu::new(),
+            pool: MaxPool2dConfig::new([2,2]).init() 
+        }
+    }
+}
+
+
+#[derive(Module, Debug)]
+pub struct Decoder<B: Backend> {
+    conv1: ConvTranspose2d<B>,
+    conv2: Conv2d<B>,
+    conv3: Conv2d<B>,
+    activation: Relu,
+}
+
+impl<B: Backend> Decoder<B> {
+    pub fn init(&self, device: &B::Device,channels: usize) -> Decoder<B> {
+        Decoder { 
+            conv1: ConvTranspose2dConfig::new([, channels], [3, 3]).with_stride([2,2]).init(device),
+            conv2: Conv2dConfig::new([channels, channels], [3, 3]).init(device),
+            conv3: Conv2dConfig::new([channels, channels], [3, 3]).init(device),
+            activation: Relu::new(),
+        }
+    }
+}
+
 
 #[derive(Module, Debug)]
 pub struct Model<B: Backend> {
+    enc1: Encoder<B>,
+    enc2: Encoder<B>,
+    enc3: Encoder<B>,
+    enc4: Encoder<B>,
+
     conv1: Conv2d<B>,
     conv2: Conv2d<B>,
-    pool: AdaptiveAvgPool2d,
-    dropout: Dropout,
-    linear1: Linear<B>,
-    linear2: Linear<B>,
-    activation: Relu,
+
+    dec1: Decoder<B>,
+    dec2: Decoder<B>,
+    dec3: Decoder<B>,
+    dec4: Decoder<B>,
+
+    activation: Relu
 }
 
 #[derive(Config, Debug)]
 pub struct ModelConfig {
-    num_classes: usize,
-    hidden_size: usize,
-    #[config(default = "0.5")]
-    dropout: f64,
 }
 
 impl ModelConfig {
-    /// Returns the initialized model.
+    // Returns the initialized model.
     pub fn init<B: Backend>(&self, device: &B::Device) -> Model<B> {
         Model {
             conv1: Conv2dConfig::new([1, 8], [3, 3]).init(device),
@@ -50,7 +94,6 @@ impl<B: Backend> Model<B> {
 
         // Create a channel at the second dimension.
         let x = images.reshape([batch_size, 1, height, width]);
-
 
         let x = self.conv1.forward(x); // [batch_size, 8, _, _]
         let x = self.dropout.forward(x);
