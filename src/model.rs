@@ -9,61 +9,44 @@ use burn::{
 use nn::{conv::{ConvTranspose2d, ConvTranspose2dConfig}, pool::{MaxPool2d, MaxPool2dConfig}};
 
 #[derive(Module, Debug)]
-pub struct Encoder<B: Backend> {
-    conv1: Conv2d<B>,
-    conv2: Conv2d<B>,
+pub struct Model<B: Backend> {
+    //Encoder layers
+    conve1: Conv2d<B>,
+    conve2: Conv2d<B>,
+
+    conve3: Conv2d<B>,
+    conve4: Conv2d<B>,
+
+    conve5: Conv2d<B>,
+    conve6: Conv2d<B>,
+
+    conve7: Conv2d<B>,
+    conve8: Conv2d<B>,
+
+    //Bottleneck
+    convb1: Conv2d<B>,
+    convb2: Conv2d<B>,
+
+    //Decoder layers
+    convdt1: ConvTranspose2d<B>,
+    convd1: Conv2d<B>,
+    convd2: Conv2d<B>,
+    
+    convdt2: ConvTranspose2d<B>,
+    convd3: Conv2d<B>,
+    convd4: Conv2d<B>,
+    
+    convdt3: ConvTranspose2d<B>,
+    convd5: Conv2d<B>,
+    convd6: Conv2d<B>,
+    
+    convdt4: ConvTranspose2d<B>,
+    convd7: Conv2d<B>,
+    convd8: Conv2d<B>,
+
+
     activation: Relu,
     pool: MaxPool2d,
-}
-
-impl<B: Backend> Encoder<B> {
-    pub fn init(&self, device: &B::Device,channels: usize) -> Encoder<B> {
-        Encoder { 
-            conv1: Conv2dConfig::new([1, channels], [3, 3]).init(device),
-            conv2: Conv2dConfig::new([channels, channels], [3, 3]).init(device),
-            activation: Relu::new(),
-            pool: MaxPool2dConfig::new([2,2]).init() 
-        }
-    }
-}
-
-
-#[derive(Module, Debug)]
-pub struct Decoder<B: Backend> {
-    conv1: ConvTranspose2d<B>,
-    conv2: Conv2d<B>,
-    conv3: Conv2d<B>,
-    activation: Relu,
-}
-
-impl<B: Backend> Decoder<B> {
-    pub fn init(&self, device: &B::Device,channels: usize) -> Decoder<B> {
-        Decoder { 
-            conv1: ConvTranspose2dConfig::new([, channels], [3, 3]).with_stride([2,2]).init(device),
-            conv2: Conv2dConfig::new([channels, channels], [3, 3]).init(device),
-            conv3: Conv2dConfig::new([channels, channels], [3, 3]).init(device),
-            activation: Relu::new(),
-        }
-    }
-}
-
-
-#[derive(Module, Debug)]
-pub struct Model<B: Backend> {
-    enc1: Encoder<B>,
-    enc2: Encoder<B>,
-    enc3: Encoder<B>,
-    enc4: Encoder<B>,
-
-    conv1: Conv2d<B>,
-    conv2: Conv2d<B>,
-
-    dec1: Decoder<B>,
-    dec2: Decoder<B>,
-    dec3: Decoder<B>,
-    dec4: Decoder<B>,
-
-    activation: Relu
 }
 
 #[derive(Config, Debug)]
@@ -74,13 +57,42 @@ impl ModelConfig {
     // Returns the initialized model.
     pub fn init<B: Backend>(&self, device: &B::Device) -> Model<B> {
         Model {
-            conv1: Conv2dConfig::new([1, 8], [3, 3]).init(device),
-            conv2: Conv2dConfig::new([8, 16], [3, 3]).init(device),
-            pool: AdaptiveAvgPool2dConfig::new([8, 8]).init(),
+            //Encoder
+            conve1: Conv2dConfig::new([1,64], [3, 3]).init(device),
+            conve2: Conv2dConfig::new([64,64], [3, 3]).init(device),
+            
+            conve3: Conv2dConfig::new([,128], [3, 3]).init(device),
+            conve4: Conv2dConfig::new([128,128], [3, 3]).init(device),
+            
+            conve5: Conv2dConfig::new([,256], [3, 3]).init(device),
+            conve6: Conv2dConfig::new([256,256], [3, 3]).init(device),
+            
+            conve7: Conv2dConfig::new([,512], [3, 3]).init(device),
+            conve8: Conv2dConfig::new([512,512], [3, 3]).init(device),
+
+            //Bottleneck
+            convb1: Conv2dConfig::new([1,], [3, 3]).init(device),
+            convb2: Conv2dConfig::new([,], [3, 3]).init(device),
+
+            //Decoder  
+            convdt1: ConvTranspose2dConfig::new([,], [2, 2]).with_stride([2,2]).init(device),
+            convd1: Conv2dConfig::new([,512], [3, 3]).init(device),
+            convd2: Conv2dConfig::new([512,512], [3, 3]).init(device),
+            
+            convdt2: ConvTranspose2dConfig::new([, ], [2, 2]).with_stride([2,2]).init(device),
+            convd3: Conv2dConfig::new([, ], [3, 3]).init(device),
+            convd4: Conv2dConfig::new([, ], [3, 3]).init(device),
+            
+            convdt3: ConvTranspose2dConfig::new([, ], [2, 2]).with_stride([2,2]).init(device),
+            convd5: Conv2dConfig::new([,], [3, 3]).init(device),
+            convd6: Conv2dConfig::new([,], [3, 3]).init(device),
+           
+            convdt4: ConvTranspose2dConfig::new([, ], [2, 2]).with_stride([2,2]).init(device),
+            convd7: Conv2dConfig::new([,], [3, 3]).init(device),
+            convd8: Conv2dConfig::new([,], [3, 3]).init(device),
+  
             activation: Relu::new(),
-            linear1: LinearConfig::new(16 * 8 * 8, self.hidden_size).init(device),
-            linear2: LinearConfig::new(self.hidden_size, self.num_classes).init(device),
-            dropout: DropoutConfig::new(self.dropout).init(),
+            pool: MaxPool2dConfig::new([2,2]).init() 
         }
     }
 }
