@@ -106,19 +106,52 @@ impl<B: Backend> Model<B> {
 
         // Create a channel at the second dimension.
         let x = images.reshape([batch_size, 1, height, width]);
+        
+        //Encoder
+        let x = self.conve1.forward(x);
+        let x = self.activation.forward(x);
+        
+        let x = self.conve2.forward(x);
+        let x = self.activation.forward(x);
+        let x = self.pool.forward(x);
 
-        let x = self.conv1.forward(x); // [batch_size, 8, _, _]
-        let x = self.dropout.forward(x);
-        let x = self.conv2.forward(x); // [batch_size, 16, _, _]
-        let x = self.dropout.forward(x);
+
+        let x = self.conve3.forward(x);
+        let x = self.activation.forward(x);
+        
+        let x = self.conve4.forward(x);
+        let x = self.activation.forward(x);
+        let x = self.pool.forward(x);
+        
+        
+        let x = self.conve5.forward(x);
+        let x = self.activation.forward(x);
+        
+        let x = self.conve6.forward(x);
+        let x = self.activation.forward(x);
+        let x = self.pool.forward(x);
+        
+        
+        let x = self.conve7.forward(x);
+        let x = self.activation.forward(x);
+        
+        let x = self.conve8.forward(x);
+        let x = self.activation.forward(x);
+        let x = self.pool.forward(x);
+        
+        //Bottleneck
+        let x = self.convb1.forward(x);        
+        let x = self.activation.forward(x);
+        let x = self.convb2.forward(x);        
         let x = self.activation.forward(x);
 
-        let x = self.pool.forward(x); // [batch_size, 16, 8, 8]
-        let x = x.reshape([batch_size, 16 * 8 * 8]);
-        let x = self.linear1.forward(x);
-        let x = self.dropout.forward(x);
-        let x = self.activation.forward(x);
+        //Decoder
+        let x = self.convdt1.forward(x);
 
-        self.linear2.forward(x) // [batch_size, num_classes]
-    }
+        let x = self.convdt2.forward(x);
+        
+        let x = self.convdt3.forward(x);
+    
+        let x = self.convdt4.forward(x);
+   }
 }
