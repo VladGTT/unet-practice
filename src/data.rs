@@ -1,7 +1,8 @@
 use burn::{
-    data::{dataloader::batcher::Batcher, dataset::vision::ImageDatasetItem},
+    data::dataloader::batcher::Batcher,
     prelude::*,
 };
+use crate::dataset::CustomDatasetItem;
 
 #[derive(Clone)]
 pub struct DataBatcher<B: Backend> {
@@ -20,31 +21,41 @@ pub struct DataBatch<B: Backend> {
     pub targets: Tensor<B, 3>,
 }
 
-impl<B: Backend> Batcher<ImageDatasetItem, DataBatch<B>> for DataBatcher<B> {
-    fn batch(&self, items: Vec<ImageDatasetItem>) -> DataBatch<B> {
-              
-        // let images = items
-        //     .iter()
-        //     .map(|item| Data::<f32, 2>::from(item.image))
+impl<B: Backend> Batcher<CustomDatasetItem, DataBatch<B>> for DataBatcher<B> {
+    fn batch(&self, items: Vec<CustomDatasetItem>) -> DataBatch<B> {
+        let dims = [1280,720]; 
+        let (mut images,mut targets): (Vec<Tensor<B, 2>>,Vec<Tensor<B, 2>>) = (Vec::new(),Vec::new());
+        for item in items.iter(){   
+            let img_data = Data::new(item.image.clone(),Shape::new(dims));
+            let img_tensor = Tensor::<B, 2>::from_data(img_data.convert(), &self.device);
+
+            let msk_data = Data::new(item.mask.clone(),Shape::new(dims));
+            let msk_tensor = Tensor::<B, 2>::from_data(msk_data.convert(), &self.device);
+        
+            images.push(img_tensor);
+            targets.push(msk_tensor);
+        }
+
+
+        // let images: Vec<Tensor<B,2>> = items
+        //     .into_iter()
+        //     .map(|item| Data::new(item.image,Shape::new([1280,720])))
         //     .map(|data| Tensor::<B, 2>::from_data(data.convert(), &self.device))
-        //     .map(|tensor| tensor.reshape([1, 28, 28]))
-        //     // Normalize: make between [0,1] and make the mean=0 and std=1
-        //     // values mean=0.1307,std=0.3081 are from the PyTorch MNIST example
-        //     // https://github.com/pytorch/examples/blob/54f4572509891883a947411fd7239237dd2a39c3/mnist/main.py#L122
-        //     .map(|tensor| ((tensor / 255) - 0.1307) / 0.3081)
         //     .collect();
 
-        // let targets = items
-        //     .iter()
-        //     .map(|item| Tensor::<B, 1, Int>::from_data(
-        //         Data::from([(item.label as i64).elem()]),
-        //         &self.device
-        //     ))
+        // let targets: Vec<Tensor<B,2>> = items
+        //     .into_iter()
+        //     .map(|item| Data::new(item.mask,Shape::new([1280,720])))
+        //     .map(|data| Tensor::<B, 2>::from_data(data.convert(), &self.device))
         //     .collect();
+
 
         // let images = Tensor::cat(images, 0).to_device(&self.device);
         // let targets = Tensor::cat(targets, 0).to_device(&self.device);
 
-        DataBatch { images, targets }
+        DataBatch { 
+            images: Tensor::stack(images, 2).to_device(&self.device),
+            targets: Tensor::stack(targets, 2).to_device(&self.device)
+        }
     }
 }

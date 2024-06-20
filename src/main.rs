@@ -1,6 +1,6 @@
-//mod data;
-//mod model;
-//mod training;
+mod data;
+mod model;
+mod training;
 mod dataset;
 
 use std::io::Cursor;
@@ -8,12 +8,13 @@ use std::path::Path;
 
 // use crate::model::ModelConfig;
 use burn::backend::{wgpu::AutoGraphicsApi, Autodiff, Wgpu};
-use burn::data;
+use burn::data::dataset::transform::PartialDataset;
 use burn::data::dataset::vision::{ImageDatasetItem, ImageFolderDataset, PixelDepth};
 use burn::data::dataset::Dataset;
 use burn::optim::AdamConfig;
 use burn::tensor::{Data, Shape, Tensor};
 
+use dataset::CustomDatasetItem;
 use image::io::Reader as ImageReader;
 
 fn list_files_in_directory(dir: &Path) -> std::io::Result<Vec<String>> {
@@ -41,10 +42,11 @@ fn main() {
 
     // let list = list_files_in_directory(Path::new("data/images")).unwrap();
 
-    // let dataset = ImageFolderDataset::new_classification("data/masks").unwrap();
 
     let dataset = crate::dataset::CustomDataset::load("data");
-    println!("{:?}", dataset);
+
+    println!("{:?}",dataset)
+
 
     // crate::training::train::<MyAutodiffBackend>(
     //     "/tmp/guide",

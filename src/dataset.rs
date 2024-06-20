@@ -13,8 +13,8 @@ pub struct CustomDataset<I> {
 }
 #[derive(Debug)]
 pub struct CustomDatasetItem {
-    image: Vec<u8>,
-    mask: Vec<u8>,
+    pub image: Vec<u8>,
+    pub mask: Vec<u8>,
 }
 impl<I: Send + Sync + Clone> Dataset<I> for CustomDataset<I> {
     fn get(&self, index: usize) -> Option<I> {
