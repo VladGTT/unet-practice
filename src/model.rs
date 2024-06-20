@@ -54,27 +54,29 @@ pub struct Model<B: Backend> {
 }
 
 #[derive(Config, Debug)]
-pub struct ModelConfig {}
+pub struct ModelConfig {
+    num_classes: usize,
+}
 
 impl ModelConfig {
     // Returns the initialized model.
-    pub fn init<B: Backend>(&self, device: &B::Device, num_classes: usize) -> Model<B> {
+    pub fn init<B: Backend>(&self, device: &B::Device) -> Model<B> {
         Model {
             //Encoder
             conve1: Conv2dConfig::new([1, 64], [3, 3]).init(device),
             conve2: Conv2dConfig::new([64, 64], [3, 3]).init(device),
 
-            conve3: Conv2dConfig::new([32, 128], [3, 3]).init(device),
+            conve3: Conv2dConfig::new([64, 128], [3, 3]).init(device),
             conve4: Conv2dConfig::new([128, 128], [3, 3]).init(device),
 
-            conve5: Conv2dConfig::new([64, 256], [3, 3]).init(device),
+            conve5: Conv2dConfig::new([128, 256], [3, 3]).init(device),
             conve6: Conv2dConfig::new([256, 256], [3, 3]).init(device),
 
-            conve7: Conv2dConfig::new([128, 512], [3, 3]).init(device),
+            conve7: Conv2dConfig::new([256, 512], [3, 3]).init(device),
             conve8: Conv2dConfig::new([512, 512], [3, 3]).init(device),
 
             //Bottleneck
-            convb1: Conv2dConfig::new([256, 1024], [3, 3]).init(device),
+            convb1: Conv2dConfig::new([512, 1024], [3, 3]).init(device),
             convb2: Conv2dConfig::new([1024, 1024], [3, 3]).init(device),
 
             //Decoder
@@ -102,7 +104,7 @@ impl ModelConfig {
             convd7: Conv2dConfig::new([128, 64], [3, 3]).init(device),
             convd8: Conv2dConfig::new([64, 64], [3, 3]).init(device),
 
-            convex: Conv2dConfig::new([64, num_classes], [1, 1])
+            convex: Conv2dConfig::new([64, self.num_classes], [1, 1])
                 .with_padding(nn::PaddingConfig2d::Valid)
                 .init(device),
             activation: Relu::new(),
