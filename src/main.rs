@@ -1,8 +1,7 @@
-mod data;
-mod model;
-mod training;
+//mod data;
+//mod model;
+//mod training;
 mod dataset;
-
 
 use std::io::Cursor;
 use std::path::Path;
@@ -40,18 +39,16 @@ fn main() {
 
     let device = burn::backend::wgpu::WgpuDevice::default();
 
-    let list = list_files_in_directory(Path::new("data/images")).unwrap(); 
-    
-    
+    // let list = list_files_in_directory(Path::new("data/images")).unwrap();
+
     // let dataset = ImageFolderDataset::new_classification("data/masks").unwrap();
 
+    let dataset = crate::dataset::CustomDataset::load("data");
+    println!("{:?}", dataset);
 
-  
-    
-    crate::training::train::<MyAutodiffBackend>(
-        "/tmp/guide",
-        crate::training::TrainingConfig::new(ModelConfig::new(1), AdamConfig::new()),
-        device,
-    );
+    // crate::training::train::<MyAutodiffBackend>(
+    //     "/tmp/guide",
+    //     crate::training::TrainingConfig::new(ModelConfig::new(1), AdamConfig::new()),
+    //     device,
+    // );
 }
-
