@@ -11,11 +11,12 @@ use burn::backend::{wgpu::AutoGraphicsApi, Autodiff, Wgpu};
 use burn::data::dataset::transform::PartialDataset;
 use burn::data::dataset::vision::{ImageDatasetItem, ImageFolderDataset, PixelDepth};
 use burn::data::dataset::Dataset;
-use burn::optim::AdamConfig;
+use burn::optim::{AdamConfig, RmsPropConfig};
 use burn::tensor::{Data, Shape, Tensor};
 
 use dataset::CustomDatasetItem;
 use image::io::Reader as ImageReader;
+use model::ModelConfig;
 
 fn list_files_in_directory(dir: &Path) -> std::io::Result<Vec<String>> {
     let mut file_list = Vec::new();
@@ -43,14 +44,13 @@ fn main() {
     // let list = list_files_in_directory(Path::new("data/images")).unwrap();
 
 
-    let dataset = crate::dataset::CustomDataset::load("data");
+    // let dataset = crate::dataset::CustomDataset::load("data");
 
-    println!("{:?}",dataset)
+    // println!("{:?}",dataset)
 
-
-    // crate::training::train::<MyAutodiffBackend>(
-    //     "/tmp/guide",
-    //     crate::training::TrainingConfig::new(ModelConfig::new(1), AdamConfig::new()),
-    //     device,
-    // );
+    crate::training::train::<MyAutodiffBackend>(
+        "/tmp/guide",
+        crate::training::TrainingConfig::new(ModelConfig::new(1),RmsPropConfig::new()),
+        device,
+    );
 }

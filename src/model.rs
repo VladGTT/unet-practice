@@ -117,7 +117,7 @@ impl<B: Backend> Model<B> {
     /// # Shapes
     ///   - Images [batch_size, height, width]
     ///   - Output [batch_size, num_classes]
-    pub fn forward(&self, images: Tensor<B, 3>) -> Tensor<B, 4> {
+    pub fn forward(&self, images: Tensor<B, 3>) -> Tensor<B, 3> {
         let [batch_size, height, width] = images.dims();
 
         // Create a channel at the second dimension.
@@ -184,6 +184,6 @@ impl<B: Backend> Model<B> {
         let d4 = self.activation.forward(d4);
 
         let result = burn::tensor::activation::sigmoid(self.convex.forward(d4));
-        result
+        result.reshape([batch_size, height, width])
     }
 }

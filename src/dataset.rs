@@ -7,11 +7,11 @@ use std::{
 use burn::data::dataset::Dataset;
 use image::io::Reader as ImageReader;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct CustomDataset<I> {
     data: Vec<I>,
 }
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct CustomDatasetItem {
     pub image: Vec<u8>,
     pub mask: Vec<u8>,
