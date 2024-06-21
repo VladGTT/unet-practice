@@ -76,12 +76,10 @@ impl CustomDataset<CustomDatasetItem> {
         Ok(file_list)
     }
     fn open_image(path: &str) -> Result<Vec<u8>, Error> {
-        let mut buf: Vec<u8> = Vec::new();
         let img = ImageReader::open(path)?;
         let decoded_img = img.decode().map_err(|err| Error::other(err))?;
-        decoded_img
-            .write_to(&mut Cursor::new(&mut buf), image::ImageFormat::Png)
-            .map_err(|err| Error::other(err))?;
-        Ok(buf)
+        
+        // println!("{:?}",decoded_img);
+        Ok(decoded_img.into_bytes())
     }
 }

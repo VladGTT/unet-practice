@@ -49,7 +49,6 @@ fn main() {
     // println!("{:?}",dataset)
 
     crate::training::train::<MyAutodiffBackend>(
-        "/tmp/guide",
         crate::training::TrainingConfig::new(ModelConfig::new(1),RmsPropConfig::new()),
         device,
     );

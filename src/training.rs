@@ -1,4 +1,4 @@
-use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::vision::MnistDataset}, module::Module, nn::loss::CrossEntropyLoss, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig}, record::CompactRecorder, tensor::{backend::{AutodiffBackend, Backend}, ElementConversion, Int, Tensor}, train::{metric::{AccuracyMetric, LossMetric}, ClassificationOutput, LearnerBuilder, TrainOutput, TrainStep, ValidStep}};
+use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::{transform::PartialDataset, vision::MnistDataset}}, module::Module, nn::loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig, CrossEntropyLoss, CrossEntropyLossConfig}, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig}, record::CompactRecorder, tensor::{backend::{AutodiffBackend, Backend}, ElementConversion, Int, Tensor}, train::{metric::{AccuracyMetric, LossMetric}, ClassificationOutput, LearnerBuilder, TrainOutput, TrainStep, ValidStep}};
 
 use crate::{data::{DataBatch, DataBatcher}, dataset::CustomDataset, model::{Model, ModelConfig}};
 
@@ -35,7 +35,7 @@ pub struct TrainingConfig {
     pub optimizer: RmsPropConfig,
     #[config(default = 10)]
     pub num_epochs: usize,
-    #[config(default = 64)]
+    #[config(default = 1)]
     pub batch_size: usize,
     #[config(default = 4)]
     pub num_workers: usize,
@@ -51,7 +51,7 @@ pub struct TrainingConfig {
 //     std::fs::create_dir_all(artifact_dir).ok();
 // }
 
-pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
+pub fn train<B: AutodiffBackend>(config: TrainingConfig, device: B::Device) {
     // create_artifact_dir(artifact_dir);
     // config   
     //     .save(format!("{artifact_dir}/config.json"))
@@ -60,13 +60,16 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
     B::seed(config.seed);
 
     let batcher_train = DataBatcher::<B>::new(device.clone());
-    let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
-
+    // let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
+    let dataset = CustomDataset::load("data").unwrap();
+    
+    
+    
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(CustomDataset::load("data").unwrap());
+        .build(PartialDataset::new(dataset, 0, 10));
 
 
     // Create the model and optimizer.
@@ -78,8 +81,11 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         // Implement our training loop.
         for (iteration, batch) in dataloader_train.iter().enumerate() {
             let output = model.forward(batch.images);
-            let loss = CrossEntropyLoss::new(None, &output.device())
-                .forward(output.clone(), batch.targets.clone());
+            
+            
+            
+            let loss = BinaryCrossEntropyLossConfig::new().init(&output.device())
+                .forward(output.clone(), batch.targets.clone().int());
 
             println!(
                 "[Train - Epoch {} - Iteration {}] Loss {:.3}",
