@@ -76,10 +76,8 @@ impl CustomDataset<CustomDatasetItem> {
         Ok(file_list)
     }
     fn open_image(path: &str) -> Result<Vec<u8>, Error> {
-        let img = ImageReader::open(path)?;
-        let decoded_img = img.decode().map_err(|err| Error::other(err))?;
-        
-        // println!("{:?}",decoded_img);
-        Ok(decoded_img.into_bytes())
+        let img = ImageReader::open(path)?.decode().map_err(|err| Error::other(err))?; 
+        let img = img.resize_exact(572, 572, image::imageops::FilterType::Lanczos3);
+        Ok(img.into_bytes())
     }
 }
