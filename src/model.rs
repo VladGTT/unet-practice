@@ -167,9 +167,9 @@ impl<B: Backend> Model<B> {
         let e1 = self.activation.forward(e1);
         let e1 = self.conve2.forward(e1);
         let e1 = self.activation.forward(e1);
-        let e1 = self.pool.forward(e1);
+        let pe1 = self.pool.forward(e1.clone());
 
-        let e2 = self.conve3.forward(e1.clone()); 
+        let e2 = self.conve3.forward(pe1); 
         let e2 = self.activation.forward(e2);
         let e2 = self.conve4.forward(e2);
         let e2 = self.activation.forward(e2);
@@ -182,13 +182,9 @@ impl<B: Backend> Model<B> {
         let pe3 = self.pool.forward(e3.clone());
 
         let e4 = self.conve7.forward(pe3);
-        println!("{:?}",e4.dims());
         let e4 = self.activation.forward(e4);
-        println!("{:?}",e4.dims());
         let e4 = self.conve8.forward(e4);
-        println!("{:?}",e4.dims());
         let e4 = self.activation.forward(e4);
-        println!("{:?}",e4.dims()); //64
         let pe4 = self.pool.forward(e4.clone());
 
         //Bottleneck
@@ -196,32 +192,31 @@ impl<B: Backend> Model<B> {
         let b1 = self.activation.forward(b1);
         let b1 = self.convb2.forward(b1);
         let b1 = self.activation.forward(b1);
-        println!("{:?}",b1.dims()); //28
 
         //Decoder
         let d1 = self.convdt1.forward(b1);
-        let d1 = Tensor::cat(vec![d1.clone(), e4.reshape(shape)], 1);
+        let d1 = Tensor::cat(vec![d1.clone(), e4.slice([0..1 , 0..512 ,4..60, 4..60])], 1);
         let d1 = self.convd1.forward(d1);
         let d1 = self.activation.forward(d1);
         let d1 = self.convd2.forward(d1);
         let d1 = self.activation.forward(d1);
 
         let d2 = self.convdt2.forward(d1);
-        let d2 = Tensor::cat(vec![d2.clone(), e3],1);
+        let d2 = Tensor::cat(vec![d2.clone(), e3.slice([0..1, 0..256, 16..120,16..120])],1);
         let d2 = self.convd3.forward(d2);
         let d2 = self.activation.forward(d2);
         let d2 = self.convd4.forward(d2);
         let d2 = self.activation.forward(d2);
 
         let d3 = self.convdt3.forward(d2);
-        let d3 = Tensor::cat(vec![d3.clone(), e2],1);
+        let d3 = Tensor::cat(vec![d3.clone(), e2.slice([0..1,0..128,40..240,40..240])],1);
         let d3 = self.convd5.forward(d3);
         let d3 = self.activation.forward(d3);
         let d3 = self.convd6.forward(d3);
         let d3 = self.activation.forward(d3);
-
+        
         let d4 = self.convdt4.forward(d3);
-        let d4 = Tensor::cat(vec![d4.clone(), e1], 1);
+        let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..1,0..64,54..338,54..338])], 1);
         let d4 = self.convd7.forward(d4);
         let d4 = self.activation.forward(d4);
         let d4 = self.convd8.forward(d4);
