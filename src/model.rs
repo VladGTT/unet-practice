@@ -218,7 +218,7 @@ impl<B: Backend> Model<B> {
         let d4 = self.convdt4.forward(d3);
         println!("{:?}",d4.dims());
         println!("{:?}",e1.dims());
-        let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..1,0..64,54..338,54..338]).slice([0..1,0..64,54..338,54..338])], 1);
+        let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..1,0..64,88..480,88..480])], 1);
         let d4 = self.convd7.forward(d4);
         let d4 = self.activation.forward(d4);
         let d4 = self.convd8.forward(d4);
