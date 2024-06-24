@@ -31,7 +31,7 @@ impl<B: Backend> Batcher<CustomDatasetItem, DataBatch<B>> for DataBatcher<B> {
                 .swap_dims(2, 1) // [H, C, W]
                 .swap_dims(1, 0); // [C, H, W]
 
-            let msk_data = Data::new(item.mask.clone(),Shape::new(dims));
+            let msk_data = Data::new(item.mask.clone(),Shape::new([388,388,1]));
             let msk_tensor = Tensor::<B, 3>::from_data(msk_data.convert(), &self.device)
                 .swap_dims(2, 1) // [H, C, W]
                 .swap_dims(1, 0); // [C, H, W]

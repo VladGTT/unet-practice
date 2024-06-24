@@ -4,7 +4,7 @@ use burn::{
         pool::{AdaptiveAvgPool2d, AdaptiveAvgPool2dConfig},
         Dropout, DropoutConfig, Linear, LinearConfig, Relu,
     },
-    prelude::*,
+    prelude::*, train::{TrainOutput, TrainStep},
 };
 use nn::{
     conv::{ConvTranspose2d, ConvTranspose2dConfig},
@@ -216,8 +216,6 @@ impl<B: Backend> Model<B> {
         let d3 = self.activation.forward(d3);
         
         let d4 = self.convdt4.forward(d3);
-        println!("{:?}",d4.dims());
-        println!("{:?}",e1.dims());
         let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..1,0..64,88..480,88..480])], 1);
         let d4 = self.convd7.forward(d4);
         let d4 = self.activation.forward(d4);
@@ -229,3 +227,14 @@ impl<B: Backend> Model<B> {
         // result.reshape([batch_size, height, width])
     }
 }
+
+
+// impl<B:Backend> TrainStep<Tensor<B,4>,Tensor<B,4>> for Model<B>{
+//     fn step(&self, item: Tensor<B, 4>) -> burn::train::TrainOutput<Tensor<B,4>> {
+//         let output = self.forward(item);
+//         TrainOutput{
+//             grads:,
+//             item: output
+//         }  
+//     }
+// }
