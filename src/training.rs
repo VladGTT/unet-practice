@@ -1,4 +1,6 @@
-use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::{transform::{PartialDataset, SamplerDataset}, vision::MnistDataset}}, module::Module, nn::loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig, CrossEntropyLoss, CrossEntropyLossConfig}, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig}, record::CompactRecorder, tensor::{backend::{AutodiffBackend, Backend}, ElementConversion, Int, Tensor}, train::{metric::{AccuracyMetric, LossMetric}, ClassificationOutput, LearnerBuilder, TrainOutput, TrainStep, ValidStep}};
+use std::{thread::sleep, time::Duration};
+
+use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::{transform::{PartialDataset, SamplerDataset}, vision::MnistDataset}}, module::Module, nn::loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig, CrossEntropyLoss, CrossEntropyLossConfig, MseLoss}, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig}, record::CompactRecorder, tensor::{backend::{AutodiffBackend, Backend}, ElementConversion, Int, Tensor}, train::{metric::{AccuracyMetric, LossMetric}, ClassificationOutput, LearnerBuilder, TrainOutput, TrainStep, ValidStep}};
 
 use crate::{data::{DataBatch, DataBatcher}, dataset::CustomDataset, model::{Model, ModelConfig}};
 
@@ -35,13 +37,13 @@ pub struct TrainingConfig {
     pub optimizer: AdamConfig,
     #[config(default = 1)]
     pub num_epochs: usize,
-    #[config(default = 5)]
+    #[config(default = 1)]
     pub batch_size: usize,
     #[config(default = 4)]
     pub num_workers: usize,
     // #[config(default = 42)]
     // pub seed: u64,
-    #[config(default = 1.0e-4)]
+    #[config(default = 1.0e-1)]
     pub learning_rate: f64,
 }
 
@@ -82,24 +84,27 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str,config: TrainingConfig, devi
         for (iteration, batch) in dataloader_train.iter().enumerate() {
             let output = model.forward(batch.images);
             
-            
-            
-            let loss = BinaryCrossEntropyLossConfig::new().init(&output.device().clone())
+            let loss = BinaryCrossEntropyLossConfig::new().init(&device)
                 .forward(output, batch.targets.int());
 
             println!(
-                "[Train - Epoch {} - Iteration {}] Loss {:.3}",
+                "[Train - Epoch {} - Iteration {}] Loss {:}",
                 epoch,
                 iteration,
-                loss.clone().into_scalar(),
+                loss.clone().into_scalar()
             );
-
+            println!("Sleeping");
+            sleep(Duration::from_secs(15));
+ 
             // Gradients for the current backward pass
-            let grads = loss.backward();
-            // Gradients linked to each parameter of the model.
-            let grads = GradientsParams::from_grads(grads, &model);
+           // Gradients linked to each parameter of the model.
+            let grads = GradientsParams::from_grads(loss.backward(), &model);
+            println!("Sleeping");
+            sleep(Duration::from_secs(20));
+ 
             // Update the model using the optimizer.
             model = optim.step(config.learning_rate, model, grads);
+
         }
     }
 
@@ -114,6 +119,8 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str,config: TrainingConfig, devi
     //     .save_file(format!("{artifact_dir}/model"), &CompactRecorder::new())
     //     .expect("Trained model should be saved successfully");
 }
+
+
 
 // pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
 //     create_artifact_dir(artifact_dir);

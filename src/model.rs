@@ -3,14 +3,13 @@ use burn::{
         conv::{Conv2d, Conv2dConfig},
         pool::{AdaptiveAvgPool2d, AdaptiveAvgPool2dConfig},
         Dropout, DropoutConfig, Linear, LinearConfig, Relu,
-    },
-    prelude::*, train::{TrainOutput, TrainStep},
+    }, prelude::*, tensor::backend::AutodiffBackend, train::{ClassificationOutput, TrainOutput, TrainStep}
 };
 use nn::{
-    conv::{ConvTranspose2d, ConvTranspose2dConfig},
-    pool::{MaxPool2d, MaxPool2dConfig},
-    PaddingConfig2d,
+    conv::{ConvTranspose2d, ConvTranspose2dConfig}, loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig, CrossEntropyLoss}, pool::{MaxPool2d, MaxPool2dConfig}, PaddingConfig2d
 };
+
+use crate::data::DataBatch;
 
 #[derive(Module, Debug)]
 pub struct Model<B: Backend> {
@@ -228,13 +227,29 @@ impl<B: Backend> Model<B> {
     }
 }
 
+// impl<B: Backend> Model<B> {
+//     pub fn forward_classification(
+//         &self,
+//         images: Tensor<B, 4>,
+//         targets: Tensor<B, 4>,
+//     ) -> <B,4> {
+//         let output = self.forward(images);
+//         let loss = CrossEntropyLoss::new(None, &output.device()).forward(output.clone(), targets.clone());
 
-// impl<B:Backend> TrainStep<Tensor<B,4>,Tensor<B,4>> for Model<B>{
-//     fn step(&self, item: Tensor<B, 4>) -> burn::train::TrainOutput<Tensor<B,4>> {
-//         let output = self.forward(item);
-//         TrainOutput{
-//             grads:,
-//             item: output
-//         }  
+//         ClassificationOutput::new(loss, output, targets)
+//     }
+// }
+
+// impl<B: AutodiffBackend> TrainStep<DataBatch<B>, Tensor<B,4>> for Model<B> {
+//     fn step(&self, batch: DataBatch<B>) -> TrainOutput<Tensor<B,4>> {
+//         let item = self.forward_classification(batch.images, batch.targets);
+
+//         TrainOutput::new(self, item.loss.backward(), item)
+//     }
+// }
+
+// impl<B: Backend> ValidStep<MnistBatch<B>, ClassificationOutput<B>> for Model<B> {
+//     fn step(&self, batch: MnistBatch<B>) -> ClassificationOutput<B> {
+//         self.forward_classification(batch.images, batch.targets)
 //     }
 // }
