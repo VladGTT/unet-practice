@@ -32,15 +32,15 @@ use crate::{data::{DataBatch, DataBatcher}, dataset::CustomDataset, model::{Mode
 #[derive(Config)]
 pub struct TrainingConfig {
     pub model: ModelConfig,
-    pub optimizer: RmsPropConfig,
+    pub optimizer: AdamConfig,
     #[config(default = 1)]
     pub num_epochs: usize,
-    #[config(default = 1)]
+    #[config(default = 5)]
     pub batch_size: usize,
     #[config(default = 4)]
     pub num_workers: usize,
-    #[config(default = 42)]
-    pub seed: u64,
+    // #[config(default = 42)]
+    // pub seed: u64,
     #[config(default = 1.0e-4)]
     pub learning_rate: f64,
 }
@@ -57,7 +57,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str,config: TrainingConfig, devi
         .save(format!("/tmp/guide/config.json"))
         .expect("Config should be saved successfully");
 
-    B::seed(config.seed);
+    // B::seed(config.seed);
 
     let batcher_train = DataBatcher::<B>::new(device.clone());
     // let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
@@ -67,7 +67,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str,config: TrainingConfig, devi
     
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
-        .shuffle(config.seed)
+        // .shuffle(config.seed)
         .num_workers(config.num_workers)
         .build(dataset);
 

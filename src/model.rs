@@ -157,7 +157,7 @@ impl<B: Backend> Model<B> {
     ///   - Images [batch_size, height, width]
     ///   - Output [batch_size, num_classes]
     pub fn forward(&self, images: Tensor<B, 4>) -> Tensor<B, 4> {
-        // let [batch_size, height, width] = images.dims();
+        let [batch_size,_,_,_] = images.dims();
 
         // Create a channel at the second dimension.
         // let x = images.reshape([batch_size, 1, height, width]);
@@ -195,28 +195,28 @@ impl<B: Backend> Model<B> {
 
         //Decoder
         let d1 = self.convdt1.forward(b1);
-        let d1 = Tensor::cat(vec![d1.clone(), e4.slice([0..1 , 0..512 ,4..60, 4..60])], 1);
+        let d1 = Tensor::cat(vec![d1.clone(), e4.slice([0..batch_size , 0..512 ,4..60, 4..60])], 1);
         let d1 = self.convd1.forward(d1);
         let d1 = self.activation.forward(d1);
         let d1 = self.convd2.forward(d1);
         let d1 = self.activation.forward(d1);
 
         let d2 = self.convdt2.forward(d1);
-        let d2 = Tensor::cat(vec![d2.clone(), e3.slice([0..1, 0..256, 16..120,16..120])],1);
+        let d2 = Tensor::cat(vec![d2.clone(), e3.slice([0..batch_size, 0..256, 16..120,16..120])],1);
         let d2 = self.convd3.forward(d2);
         let d2 = self.activation.forward(d2);
         let d2 = self.convd4.forward(d2);
         let d2 = self.activation.forward(d2);
 
         let d3 = self.convdt3.forward(d2);
-        let d3 = Tensor::cat(vec![d3.clone(), e2.slice([0..1,0..128,40..240,40..240])],1);
+        let d3 = Tensor::cat(vec![d3.clone(), e2.slice([0..batch_size,0..128,40..240,40..240])],1);
         let d3 = self.convd5.forward(d3);
         let d3 = self.activation.forward(d3);
         let d3 = self.convd6.forward(d3);
         let d3 = self.activation.forward(d3);
         
         let d4 = self.convdt4.forward(d3);
-        let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..1,0..64,88..480,88..480])], 1);
+        let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..batch_size,0..64,88..480,88..480])], 1);
         let d4 = self.convd7.forward(d4);
         let d4 = self.activation.forward(d4);
         let d4 = self.convd8.forward(d4);
