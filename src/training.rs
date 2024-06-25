@@ -53,101 +53,112 @@ fn create_artifact_dir(artifact_dir: &str) {
     std::fs::create_dir_all(artifact_dir).ok();
 }
 
-pub fn train<B: AutodiffBackend<IntElem = i32>>(artifact_dir: &str,config: TrainingConfig, device: B::Device) {
-    create_artifact_dir("/tmp/guide");
-    config   
-        .save(format!("/tmp/guide/config.json"))
-        .expect("Config should be saved successfully");
-
-    B::seed(config.seed);
-
-    let batcher_train = DataBatcher::<B>::new(device.clone());
-    // let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
-    let dataset = CustomDataset::load("data",[388,388],10).unwrap();
-       
-    
-    let dataloader_train = DataLoaderBuilder::new(batcher_train)
-        .batch_size(config.batch_size)
-        .shuffle(config.seed)
-        .num_workers(config.num_workers)
-        .build(dataset);
-
-
-    // Create the model and optimizer.
-    let mut model: Model<B> = config.model.init(&device);
-    let mut optim = config.optimizer.init::<B,_>();
-    let lossfn: burn::nn::loss::BinaryCrossEntropyLoss<B> = BinaryCrossEntropyLossConfig::new().init(&device);
-    // Iterate over our training and validation loop for X epochs.
-    for epoch in 1..config.num_epochs + 1 {
-        // Implement our training loop.
-        for (iteration, batch) in dataloader_train.iter().enumerate() {
-            let output = model.forward(batch.images);
-            
-            // println!("{:?}",batch.targets.clone().int().to_data().value);
-            let loss = lossfn.forward(output, batch.targets.int());
-            // let loss = MseLoss::new()
-                //  .forward_no_reduction(output, batch.targets);
-
-            println!(
-                "[Train - Epoch {} - Iteration {}] Loss {:.5}",
-                epoch,
-                iteration,
-                loss.clone().into_scalar()
-            );
-            
-            
-            let grads = GradientsParams::from_grads(loss.backward(), &model);
-            // println!("Sleeping");
-            // sleep(Duration::from_secs(30));
- 
-            // Update the model using the optimizer.
-            model = optim.step(config.learning_rate, model, grads);
-
-        }
-    }
-    let _ = model.save("models/models").expect("model not saved");
-
-
-    
-}
-// pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
-//     create_artifact_dir(artifact_dir);
-//     config
-//         .save(format!("{artifact_dir}/config.json"))
+// pub fn train<B: AutodiffBackend<IntElem = i32>>(artifact_dir: &str,config: TrainingConfig, device: B::Device) {
+//     create_artifact_dir("/tmp/guide");
+//     config   
+//         .save(format!("/tmp/guide/config.json"))
 //         .expect("Config should be saved successfully");
 
 //     B::seed(config.seed);
 
 //     let batcher_train = DataBatcher::<B>::new(device.clone());
-//     let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
-
+//     // let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
 //     let dataset = CustomDataset::load("data",[388,388],10).unwrap();
+       
+    
 //     let dataloader_train = DataLoaderBuilder::new(batcher_train)
 //         .batch_size(config.batch_size)
 //         .shuffle(config.seed)
 //         .num_workers(config.num_workers)
-//         .build(PartialDataset::new(dataset.clone(),0,7));
+//         .build(dataset);
 
-//     let dataloader_test = DataLoaderBuilder::new(batcher_valid)
-//         .batch_size(config.batch_size)
-//         .shuffle(config.seed)
-//         .num_workers(config.num_workers)
-//         .build(PartialDataset::new(dataset,8,9));
 
-//     let learner = LearnerBuilder::new(artifact_dir)
-//         .metric_train_numeric(LossMetric::new())
-//         .metric_valid_numeric(LossMetric::new())
-//         .with_file_checkpointer(CompactRecorder::new())
-//         .devices(vec![device.clone()])
-//         .num_epochs(config.num_epochs)
-//         .summary()
-//         .build(
-//             config.model.init::<B>(&device),
-//             config.optimizer.init(),
-//             config.learning_rate,
-//         );
+//     // Create the model and optimizer.
+//     let mut model: Model<B> = config.model.init(&device);
+//     let mut optim = config.optimizer.init::<B,_>();
+//     let lossfn: burn::nn::loss::BinaryCrossEntropyLoss<B> = BinaryCrossEntropyLossConfig::new().init(&device);
+//     // Iterate over our training and validation loop for X epochs.
+//     for epoch in 1..config.num_epochs + 1 {
+//         // Implement our training loop.
+//         for (iteration, batch) in dataloader_train.iter().enumerate() {
+//             let output = model.forward(batch.images);
+            
+//             // println!("{:?}",batch.targets.clone().int().to_data().value);
+//             let loss = lossfn.forward(output, batch.targets.int());
+//             // let loss = MseLoss::new()
+//                 //  .forward_no_reduction(output, batch.targets);
 
-//     let model_trained = learner.fit(dataloader_train, dataloader_test);
+//             println!(
+//                 "[Train - Epoch {} - Iteration {}] Loss {:.5}",
+//                 epoch,
+//                 iteration,
+//                 loss.clone().into_scalar()
+//             );
+            
+            
+//             let grads = GradientsParams::from_grads(loss.backward(), &model);
+//             // println!("Sleeping");
+//             // sleep(Duration::from_secs(30));
+ 
+//             // Update the model using the optimizer.
+//             model = optim.step(config.learning_rate, model, grads);
 
-//     model_trained.save("models/models").expect("model not saved");
+//         }
+//     }
+//     let _ = model.save("models/models").expect("model not saved");
+
+
+    
 // }
+
+
+
+
+
+
+
+
+
+
+
+pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
+    create_artifact_dir(artifact_dir);
+    config
+        .save(format!("{artifact_dir}/config.json"))
+        .expect("Config should be saved successfully");
+
+    B::seed(config.seed);
+
+    let batcher_train = DataBatcher::<B>::new(device.clone());
+    let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
+
+    let dataset = CustomDataset::load("data",[388,388],5).unwrap();
+    let dataloader_train = DataLoaderBuilder::new(batcher_train)
+        .batch_size(config.batch_size)
+        .shuffle(config.seed)
+        .num_workers(config.num_workers)
+        .build(PartialDataset::new(dataset.clone(),0,3));
+
+    let dataloader_test = DataLoaderBuilder::new(batcher_valid)
+        .batch_size(config.batch_size)
+        .shuffle(config.seed)
+        .num_workers(config.num_workers)
+        .build(PartialDataset::new(dataset,4,5));
+
+    let learner = LearnerBuilder::new(artifact_dir)
+        .metric_train_numeric(LossMetric::new())
+        .metric_valid_numeric(LossMetric::new())
+        .with_file_checkpointer(CompactRecorder::new())
+        .devices(vec![device.clone()])
+        .num_epochs(config.num_epochs)
+        .summary()
+        .build(
+            config.model.init::<B>(&device),
+            config.optimizer.init(),
+            config.learning_rate,
+        );
+
+    let model_trained = learner.fit(dataloader_train, dataloader_test);
+
+    model_trained.save("models/models").expect("model not saved");
+}

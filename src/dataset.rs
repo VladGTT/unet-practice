@@ -1,9 +1,9 @@
 use std::{
-    io::Error, iter::zip, ops::Range, path::Path
+    io::{Cursor, Error}, iter::zip, ops::Range, path::Path
 };
 
 use burn::data::dataset::Dataset;
-use image::{io::Reader as ImageReader, DynamicImage, ImageBuffer, Rgb};
+use image::{codecs::png::PngDecoder, io::Reader as ImageReader, DynamicImage, ImageBuffer, Pixel, Rgb};
 
 #[derive(Debug,Clone)]
 pub struct CustomDataset<I> {
@@ -52,7 +52,7 @@ impl CustomDataset<CustomDatasetItem> {
         for (image, mask) in zip(list_images, list_masks) {
 
             let image = CustomImage::open(&image)?.resize().resize_with_mirroring();
-            let mask = CustomImage::open(&mask)?.resize();
+            let mask = CustomImage::open(&mask)?.resize().into_grayscale();
 
             let new_item = CustomDatasetItem {
                 image: image.into_bytes(),
@@ -126,5 +126,23 @@ impl CustomImage {
     }
     pub fn into_bytes(self)->Vec<u8>{
         self.image.into_bytes()
+    }
+
+    pub fn from_bytes(buf: Vec<u8>)->Option<Self>{
+        let img_buf: ImageBuffer<Rgb<_>, Vec<_>> = ImageBuffer::from_vec(388, 388,buf)?;
+        let image = DynamicImage::from(img_buf); 
+
+        // let decoder = PngDecoder::new(Cursor::new(&buf)).map_err(|e|Error::other(e))?;
+        // let image = DynamicImage::from_decoder(decoder).map_err(|e|Error::other(e))?;
+        
+        Some(
+            Self{
+                image: image
+            }
+        )
+    }
+    pub fn into_grayscale(self)->Self{
+        let img = self.image.into_luma8();
+        Self { image: DynamicImage::from(img) }
     }
 }

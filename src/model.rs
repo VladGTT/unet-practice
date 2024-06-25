@@ -52,12 +52,11 @@ pub struct Model<B: Backend> {
 
     activation: Relu,
     pool: MaxPool2d,
+    
 }
 
 #[derive(Config, Debug)]
-pub struct ModelConfig {
-    num_classes: usize,
-}
+pub struct ModelConfig {}
 
 impl ModelConfig {
     // Returns the initialized model.
@@ -142,7 +141,7 @@ impl ModelConfig {
                 // .with_padding(PaddingConfig2d::Explicit(1,1))
                 .init(device),
 
-            convex: Conv2dConfig::new([64, self.num_classes], [1, 1])
+            convex: Conv2dConfig::new([64, 1], [1, 1])
                 .init(device),
             activation: Relu::new(),
             pool: MaxPool2dConfig::new([2, 2])
@@ -198,7 +197,7 @@ impl<B: Backend> Model<B> {
 
         //Decoder
         let d1 = self.convdt1.forward(b1);
-        let d1 = Tensor::cat(vec![d1.clone(), e4.slice([0..batch_size , 0..512 ,4..60, 4..60])], 1);
+        let d1 = Tensor::cat(vec![d1, e4.slice([0..batch_size , 0..512 ,4..60, 4..60])], 1);
         let d1 = self.convd1.forward(d1);
         let d1 = self.activation.forward(d1);
         let d1 = self.convd2.forward(d1);
@@ -206,14 +205,14 @@ impl<B: Backend> Model<B> {
 
         // println!("{:?}",d1.clone().into_data().value);
         let d2 = self.convdt2.forward(d1);
-        let d2 = Tensor::cat(vec![d2.clone(), e3.slice([0..batch_size, 0..256, 16..120,16..120])],1);
+        let d2 = Tensor::cat(vec![d2, e3.slice([0..batch_size, 0..256, 16..120,16..120])],1);
         let d2 = self.convd3.forward(d2);
         let d2 = self.activation.forward(d2);
         let d2 = self.convd4.forward(d2);
         let d2 = self.activation.forward(d2);
 
         let d3 = self.convdt3.forward(d2);
-        let d3 = Tensor::cat(vec![d3.clone(), e2.slice([0..batch_size,0..128,40..240,40..240])],1);
+        let d3 = Tensor::cat(vec![d3, e2.slice([0..batch_size,0..128,40..240,40..240])],1);
         let d3 = self.convd5.forward(d3);
         let d3 = self.activation.forward(d3);
         let d3 = self.convd6.forward(d3);
@@ -221,7 +220,7 @@ impl<B: Backend> Model<B> {
         
         // println!("{:?}",d3.clone().into_data().value);
         let d4 = self.convdt4.forward(d3);
-        let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..batch_size,0..64,88..480,88..480])], 1);
+        let d4 = Tensor::cat(vec![d4, e1.slice([0..batch_size,0..64,88..480,88..480])], 1);
         let d4 = self.convd7.forward(d4);
         let d4 = self.activation.forward(d4);
         let d4 = self.convd8.forward(d4);
@@ -262,7 +261,7 @@ impl<B: Backend> SegmentationOutput<B>{
 
 impl<B: Backend> Adaptor<LossInput<B>> for SegmentationOutput<B>{
     fn adapt(&self) -> LossInput<B> {
-        LossInput::new(self.loss.clone())   
+        LossInput::new(self.loss.clone().flatten(0, 3))   
     }
 }
 
@@ -273,8 +272,8 @@ impl<B: Backend> Model<B> {
         targets: Tensor<B, 4>,
     ) -> SegmentationOutput<B> {
         let output = self.forward(images);
-        let loss = BinaryCrossEntropyLossConfig::new().init(&output.device())
-                .forward(output.clone(), targets.clone().int());
+        let loss = CrossEntropyLoss::new(None,&output.device())
+                .forward(output.clone(), targets.clone().int().);
         // let loss = CrossEntropyLoss::new(None, &output.device()).forward(output.clone(), targets.clone());
 
         SegmentationOutput::new(loss, output, targets)
