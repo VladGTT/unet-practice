@@ -23,7 +23,7 @@ pub struct DataBatch<B: Backend> {
 
 impl<B: Backend> Batcher<CustomDatasetItem, DataBatch<B>> for DataBatcher<B> {
     fn batch(&self, items: Vec<CustomDatasetItem>) -> DataBatch<B> {
-        let dims = [573,573,3]; 
+        let dims = [572,572,3]; 
         let (mut images,mut targets): (Vec<Tensor<B, 3>>,Vec<Tensor<B, 3>>) = (Vec::new(),Vec::new());
         for item in items.iter(){   
             let img_data = Data::new(item.image.clone(),Shape::new(dims));

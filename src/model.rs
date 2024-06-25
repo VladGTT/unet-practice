@@ -1,15 +1,13 @@
 use burn::{
-    nn::{
+    module::Devices, nn::{
         conv::{Conv2d, Conv2dConfig},
-        pool::{AdaptiveAvgPool2d, AdaptiveAvgPool2dConfig},
-        Dropout, DropoutConfig, Linear, LinearConfig, Relu,
-    }, prelude::*, tensor::backend::AutodiffBackend, train::{ClassificationOutput, TrainOutput, TrainStep}
+        Relu,
+    }, prelude::*, record::CompactRecorder
 };
 use nn::{
-    conv::{ConvTranspose2d, ConvTranspose2dConfig}, loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig, CrossEntropyLoss}, pool::{MaxPool2d, MaxPool2dConfig}, PaddingConfig2d
+    conv::{ConvTranspose2d, ConvTranspose2dConfig}, pool::{MaxPool2d, MaxPool2dConfig},
 };
 
-use crate::data::DataBatch;
 
 #[derive(Module, Debug)]
 pub struct Model<B: Backend> {
@@ -163,6 +161,7 @@ impl<B: Backend> Model<B> {
 
         //Encoder
         let e1 = self.conve1.forward(images);
+        // println!("{:?}",e1.clone().into_data().value);
         let e1 = self.activation.forward(e1);
         let e1 = self.conve2.forward(e1);
         let e1 = self.activation.forward(e1);
@@ -174,6 +173,7 @@ impl<B: Backend> Model<B> {
         let e2 = self.activation.forward(e2);
         let pe2 = self.pool.forward(e2.clone());
 
+        // println!("{:?}",pe2.clone().into_data().value);
         let e3 = self.conve5.forward(pe2);
         let e3 = self.activation.forward(e3);
         let e3 = self.conve6.forward(e3);
@@ -186,6 +186,7 @@ impl<B: Backend> Model<B> {
         let e4 = self.activation.forward(e4);
         let pe4 = self.pool.forward(e4.clone());
 
+        // println!("{:?}",pe4.clone().into_data().value);
         //Bottleneck
         let b1 = self.convb1.forward(pe4);
         let b1 = self.activation.forward(b1);
@@ -200,6 +201,7 @@ impl<B: Backend> Model<B> {
         let d1 = self.convd2.forward(d1);
         let d1 = self.activation.forward(d1);
 
+        // println!("{:?}",d1.clone().into_data().value);
         let d2 = self.convdt2.forward(d1);
         let d2 = Tensor::cat(vec![d2.clone(), e3.slice([0..batch_size, 0..256, 16..120,16..120])],1);
         let d2 = self.convd3.forward(d2);
@@ -214,6 +216,7 @@ impl<B: Backend> Model<B> {
         let d3 = self.convd6.forward(d3);
         let d3 = self.activation.forward(d3);
         
+        // println!("{:?}",d3.clone().into_data().value);
         let d4 = self.convdt4.forward(d3);
         let d4 = Tensor::cat(vec![d4.clone(), e1.slice([0..batch_size,0..64,88..480,88..480])], 1);
         let d4 = self.convd7.forward(d4);
@@ -221,35 +224,19 @@ impl<B: Backend> Model<B> {
         let d4 = self.convd8.forward(d4);
         let d4 = self.activation.forward(d4);
 
+        // println!("{:?}",d4.clone().into_data().value);
         let result = burn::tensor::activation::sigmoid(self.convex.forward(d4));
         result
         // result.reshape([batch_size, height, width])
     }
 }
 
-// impl<B: Backend> Model<B> {
-//     pub fn forward_classification(
-//         &self,
-//         images: Tensor<B, 4>,
-//         targets: Tensor<B, 4>,
-//     ) -> <B,4> {
-//         let output = self.forward(images);
-//         let loss = CrossEntropyLoss::new(None, &output.device()).forward(output.clone(), targets.clone());
+impl<B: Backend> Model<B> {
+    pub fn save(self,path: &str)->Result<(),()>{
+        self.save_file(path, &CompactRecorder::new()).map_err(|_|())
+    }
+    pub fn load(self,path: &str,device: &Device<B>)->Result<Self,()>{
+        self.load_file(path,&CompactRecorder::new(),device).map_err(|_|())
+    }
+}
 
-//         ClassificationOutput::new(loss, output, targets)
-//     }
-// }
-
-// impl<B: AutodiffBackend> TrainStep<DataBatch<B>, Tensor<B,4>> for Model<B> {
-//     fn step(&self, batch: DataBatch<B>) -> TrainOutput<Tensor<B,4>> {
-//         let item = self.forward_classification(batch.images, batch.targets);
-
-//         TrainOutput::new(self, item.loss.backward(), item)
-//     }
-// }
-
-// impl<B: Backend> ValidStep<MnistBatch<B>, ClassificationOutput<B>> for Model<B> {
-//     fn step(&self, batch: MnistBatch<B>) -> ClassificationOutput<B> {
-//         self.forward_classification(batch.images, batch.targets)
-//     }
-// }

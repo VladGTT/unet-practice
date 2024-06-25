@@ -1,5 +1,5 @@
 use std::{
-    io::{Cursor, Error}, iter::zip, ops::Range, path::Path
+    io::Error, iter::zip, ops::Range, path::Path
 };
 
 use burn::data::dataset::Dataset;
@@ -50,15 +50,13 @@ impl CustomDataset<CustomDatasetItem> {
         
         let mut data: Vec<CustomDatasetItem> = Vec::new();
         for (image, mask) in zip(list_images, list_masks) {
-            let image = Self::open_image(&image,shape)?;
-            let prepared_image = Self::resize_with_mirroring(image);
 
-            let mask = Self::open_image(&mask, shape)?;
-            let prepared_mask = DynamicImage::from(mask.into_luma8());
+            let image = CustomImage::open(&image)?.resize().resize_with_mirroring();
+            let mask = CustomImage::open(&mask)?.resize();
 
             let new_item = CustomDatasetItem {
-                image: prepared_image.into_bytes(),
-                mask: prepared_mask.into_bytes(),
+                image: image.into_bytes(),
+                mask: mask.into_bytes(),
             };
 
             data.push(new_item);
@@ -83,15 +81,24 @@ impl CustomDataset<CustomDatasetItem> {
 
         Ok(file_list)
     }
-    fn open_image(path: &str,shape: [u32;2]) -> Result<DynamicImage, Error> {
+
+}
+pub struct CustomImage{
+    image: DynamicImage
+}
+
+impl CustomImage {
+    pub fn open(path: &str)->Result<Self, Error>{
         let img = ImageReader::open(path)?.decode().map_err(|err| Error::other(err))?; 
-        let img = img.resize_exact(shape[0],shape[1], image::imageops::FilterType::Lanczos3);
-        Ok(img)
+        Ok(Self{image: img})
     }
-    
-    fn resize_with_mirroring(image: DynamicImage)->DynamicImage{
+    pub fn resize(self)->Self{
+        Self{image: self.image.resize_exact(388,388, image::imageops::FilterType::Lanczos3)}
+    }
+
+    pub fn resize_with_mirroring(self)->Self{
         let mut new_img = ImageBuffer::new(572,572);
-        let image_buffer = image.to_rgb8(); 
+        let image_buffer = self.image.to_rgb8(); 
         for (x,y,pixel) in image_buffer.enumerate_pixels(){
             new_img.put_pixel(x+92, y+92, pixel.clone());
         };
@@ -112,8 +119,12 @@ impl CustomDataset<CustomDatasetItem> {
         let mut new_img = DynamicImage::from(new_img).rotate180().to_rgb8(); 
         mirror(&mut new_img,0..572,92..184);
         let new_img = DynamicImage::from(new_img).rotate270().to_rgb8();
-        DynamicImage::from(new_img)   
+        Self{image: DynamicImage::from(new_img)}
     }
-
-
+    pub fn save(self,path:&str)->Result<(),Error>{
+        self.image.save(path).map_err(|err|Error::other(err))
+    }
+    pub fn into_bytes(self)->Vec<u8>{
+        self.image.into_bytes()
+    }
 }
