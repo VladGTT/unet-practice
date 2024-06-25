@@ -1,12 +1,15 @@
+
 use burn::{
     module::Devices, nn::{
         conv::{Conv2d, Conv2dConfig},
         Relu,
-    }, prelude::*, record::CompactRecorder
+    }, prelude::*, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::{Adaptor, LossInput}, TrainOutput, TrainStep, ValidStep}
 };
 use nn::{
-    conv::{ConvTranspose2d, ConvTranspose2dConfig}, pool::{MaxPool2d, MaxPool2dConfig},
+    conv::{ConvTranspose2d, ConvTranspose2dConfig}, loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig, CrossEntropyLoss}, pool::{MaxPool2d, MaxPool2dConfig}
 };
+
+use crate::data::DataBatch;
 
 
 #[derive(Module, Debug)]
@@ -237,6 +240,61 @@ impl<B: Backend> Model<B> {
     }
     pub fn load(self,path: &str,device: &Device<B>)->Result<Self,()>{
         self.load_file(path,&CompactRecorder::new(),device).map_err(|_|())
+    }
+}
+
+#[derive(Debug)]
+pub struct SegmentationOutput<B:Backend>{
+    pub loss: Tensor<B,1>,
+    pub output: Tensor<B,4>,
+    pub targets: Tensor<B,4>
+}
+
+impl<B: Backend> SegmentationOutput<B>{
+    pub fn new(loss: Tensor<B,1>, output: Tensor<B,4>, targets: Tensor<B,4>)->Self{
+        Self{
+            loss: loss,
+            output: output,
+            targets: targets
+        }
+    }
+}
+
+impl<B: Backend> Adaptor<LossInput<B>> for SegmentationOutput<B>{
+    fn adapt(&self) -> LossInput<B> {
+        LossInput::new(self.loss.clone())   
+    }
+}
+
+impl<B: Backend> Model<B> {
+    pub fn forward_segmentation(
+        &self,
+        images: Tensor<B, 4>,
+        targets: Tensor<B, 4>,
+    ) -> SegmentationOutput<B> {
+        let output = self.forward(images);
+        let loss = BinaryCrossEntropyLossConfig::new().init(&output.device())
+                .forward(output.clone(), targets.clone().int());
+        // let loss = CrossEntropyLoss::new(None, &output.device()).forward(output.clone(), targets.clone());
+
+        SegmentationOutput::new(loss, output, targets)
+    }
+}
+
+
+
+
+impl<B: AutodiffBackend> TrainStep<DataBatch<B>, SegmentationOutput<B>> for Model<B> {
+    fn step(&self, batch: DataBatch<B>) -> TrainOutput<SegmentationOutput<B>> {
+        let item = self.forward_segmentation(batch.images, batch.targets);
+
+        TrainOutput::new(self, item.loss.backward(), item)
+    }
+}
+
+impl<B: Backend> ValidStep<DataBatch<B>, SegmentationOutput<B>> for Model<B> {
+    fn step(&self, batch: DataBatch<B>) -> SegmentationOutput<B> {
+        self.forward_segmentation(batch.images, batch.targets)
     }
 }
 

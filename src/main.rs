@@ -5,7 +5,7 @@ mod training;
 
 // use burn::backend::wgpu::*;
 use burn::backend::{wgpu::AutoGraphicsApi, Autodiff, Wgpu};
-use burn::optim::AdamConfig;
+use burn::optim::{AdamConfig, RmsPropConfig};
 use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Device, Shape, Tensor};
 use dataset::CustomImage;
@@ -22,7 +22,7 @@ fn main() {
 
     crate::training::train::<MyAutodiffBackend>(
         "/tmp/guide",
-        crate::training::TrainingConfig::new(ModelConfig::new(1),AdamConfig::new()),
+        crate::training::TrainingConfig::new(ModelConfig::new(1),RmsPropConfig::new()),
         device,
     );
 }
