@@ -1,6 +1,6 @@
 use std::{thread::sleep, time::Duration};
 
-use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::transform::PartialDataset}, module::Module, nn::loss::{BinaryCrossEntropyLossConfig, MseLoss}, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig}, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::LossMetric, LearnerBuilder}};
+use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::transform::PartialDataset}, module::Module, nn::loss::{BinaryCrossEntropyLossConfig, MseLoss}, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig, SgdConfig}, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::LossMetric, LearnerBuilder}};
 
 use crate::{data::DataBatcher, dataset::CustomDataset, model::{Model, ModelConfig}};
 
@@ -34,7 +34,7 @@ use crate::{data::DataBatcher, dataset::CustomDataset, model::{Model, ModelConfi
 #[derive(Config)]
 pub struct TrainingConfig {
     pub model: ModelConfig,
-    pub optimizer: RmsPropConfig,
+    pub optimizer: SgdConfig,
     #[config(default = 1)]
     pub num_epochs: usize,
     #[config(default = 1)]
@@ -94,11 +94,8 @@ pub fn train<B: AutodiffBackend<IntElem = i32>>(artifact_dir: &str,config: Train
                 iteration,
                 loss.clone().into_scalar()
             );
-            // println!("Sleeping");
-            // sleep(Duration::from_secs(20));
- 
-            // Gradients for the current backward pass
-           // Gradients linked to each parameter of the model.
+            
+            
             let grads = GradientsParams::from_grads(loss.backward(), &model);
             // println!("Sleeping");
             // sleep(Duration::from_secs(30));
