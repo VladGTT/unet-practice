@@ -261,7 +261,7 @@ impl<B: Backend> SegmentationOutput<B>{
 
 impl<B: Backend> Adaptor<LossInput<B>> for SegmentationOutput<B>{
     fn adapt(&self) -> LossInput<B> {
-        LossInput::new(self.loss.clone().flatten(0, 3))   
+        LossInput::new(self.loss.clone())   
     }
 }
 

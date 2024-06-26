@@ -35,9 +35,9 @@ use crate::{data::DataBatcher, dataset::CustomDataset, model::{Model, ModelConfi
 pub struct TrainingConfig {
     pub model: ModelConfig,
     pub optimizer: SgdConfig,
-    #[config(default = 1)]
+    #[config(default = 2)]
     pub num_epochs: usize,
-    #[config(default = 1)]
+    #[config(default = 5)]
     pub batch_size: usize,
     #[config(default = 4)]
     pub num_workers: usize,
@@ -62,62 +62,79 @@ pub fn train<B: AutodiffBackend<IntElem = i32>>(artifact_dir: &str,config: Train
     B::seed(config.seed);
 
     let batcher_train = DataBatcher::<B>::new(device.clone());
-    // let batcher_valid = DataBatcher::<B::InnerBackend>::new(device.clone());
-    let dataset = CustomDataset::load("data/train",10).unwrap();
+    let batcher_valid = DataBatcher::<B>::new(device.clone());
+    let dataset = CustomDataset::load("data/train",50).unwrap();
        
     
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(dataset);
+        .build(PartialDataset::new(dataset.clone(),0,30));
 
+    let dataloader_test = DataLoaderBuilder::new(batcher_valid)
+        .batch_size(config.batch_size)
+        .shuffle(config.seed)
+        .num_workers(config.num_workers)
+        .build(PartialDataset::new(dataset,31,49));
 
     // Create the model and optimizer.
     let mut model: Model<B> = config.model.init(&device);
     let mut optim = config.optimizer.init::<B,_>();
-    let lossfn = BinaryCrossEntropyLossConfig::new().with_logits(true).init(&device);
+    let lossfn = BinaryCrossEntropyLossConfig::new().init(&device);
     // Iterate over our training and validation loop for X epochs.
-    let mut iter_res:Vec<String> = Vec::default();
+    let mut iter_train_res:Vec<String> = Vec::default();
+    let mut iter_test_res:Vec<String> = Vec::default();
     for epoch in 1..config.num_epochs + 1 {
         // Implement our training loop.
         for (iteration, batch) in dataloader_train.iter().enumerate() {
             let output = model.forward(batch.images);
-            
-            // println!("{:?}",batch.targets.clone().int().to_data().value);
+            // println!("Output: {}",output.clone());
+            // println!("Target: {}",batch.targets.clone().int());
             let loss = lossfn.forward(output, batch.targets.int());
-            // let loss = MseLoss::new()
-                //  .forward_no_reduction(output, batch.targets);
 
             let outstr=format!("[Train - Epoch {} - Iteration {}] Loss {:.5}",epoch,iteration,loss.clone().into_scalar());
-            iter_res.push(outstr.clone());
+            iter_train_res.push(outstr.clone());
             println!("{}",outstr);
-            // println!(
-            //     "[Train - Epoch {} - Iteration {}] Loss {:.5}",
-            //     epoch,
-            //     iteration,
-            //     loss.clone().into_scalar()
-            // );
-            println!("Sleeping");
-            sleep(Duration::from_secs(10));
+            
+            println!("Sleep 60sec");
+            sleep(Duration::from_secs(20));
             
             let grads = GradientsParams::from_grads(loss.backward(), &model);
-            println!("Sleeping");
-            sleep(Duration::from_secs(10));
+            sleep(Duration::from_secs(20));
  
             // Update the model using the optimizer.
             model = optim.step(config.learning_rate, model, grads);
+            
+            sleep(Duration::from_secs(20));
+            
+        }
+        for (iteration, batch) in dataloader_test.iter().enumerate() {
+            let output = model.forward(batch.images);
+            // println!("Output: {}",output.clone());
+            // println!("Target: {}",batch.targets.clone().int());
+            let loss = lossfn.forward(output, batch.targets.int());
 
+            let outstr=format!("[Test - Epoch {} - Iteration {}] Loss {:.5}",epoch,iteration,loss.clone().into_scalar());
+            iter_test_res.push(outstr.clone());
+            println!("{}",outstr);
         }
     }
 
 
     let _ = model.save("models/models").expect("model not saved");
 
-    for item in iter_res{
+
+    println!("============================= TRAIN SUMMARY =====================================");
+    for item in iter_train_res{
         println!("{}",item)
     }
-    
+
+
+    println!("============================= TEST SUMMARY =====================================");
+    for item in iter_test_res{
+        println!("{}",item)
+    }
 }
 
 

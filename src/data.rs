@@ -36,7 +36,10 @@ impl<B: Backend> Batcher<CustomDatasetItem, DataBatch<B>> for DataBatcher<B> {
                 .swap_dims(2, 1) // [H, C, W]
                 .swap_dims(1, 0); // [C, H, W]
 
-           
+            let img_tensor = img_tensor.div(Tensor::full(Shape::new([3,572,572]), 255, &self.device));
+
+            let msk_tensor = msk_tensor.div(Tensor::full(Shape::new([1,388,388]), 255, &self.device));
+            
             
             images.push(img_tensor);
             targets.push(msk_tensor);

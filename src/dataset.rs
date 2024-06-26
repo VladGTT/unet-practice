@@ -3,7 +3,7 @@ use std::{
 };
 
 use burn::data::dataset::Dataset;
-use image::{io::Reader as ImageReader, DynamicImage, ImageBuffer, Pixel, Rgb};
+use image::{io::Reader as ImageReader, DynamicImage, ImageBuffer, Luma, Pixel, Rgb};
 
 #[derive(Debug,Clone)]
 pub struct CustomDataset<I> {
@@ -129,7 +129,7 @@ impl CustomImage {
     }
 
     pub fn from_bytes(buf: Vec<u8>)->Option<Self>{
-        let img_buf: ImageBuffer<Rgb<_>, Vec<_>> = ImageBuffer::from_vec(388, 388,buf)?;
+        let img_buf: ImageBuffer<Luma<_>, Vec<_>> = ImageBuffer::from_vec(388, 388,buf)?;
         let image = DynamicImage::from(img_buf); 
 
         // let decoder = PngDecoder::new(Cursor::new(&buf)).map_err(|e|Error::other(e))?;

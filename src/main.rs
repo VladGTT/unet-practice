@@ -7,6 +7,7 @@ use std::path::Path;
 
 // use burn::backend::wgpu::*;
 use burn::backend::{wgpu::AutoGraphicsApi, Autodiff, Wgpu};
+use burn::module::Module;
 use burn::optim::{AdamConfig, RmsPropConfig, SgdConfig};
 use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Device, Shape, Tensor};
@@ -20,18 +21,14 @@ fn main() {
 
     let device = burn::backend::wgpu::WgpuDevice::default();
     
-    let image = CustomImage::open("data/train/images/austin1.tif")
-        .unwrap()
-        .resize_with_mirroring();
-    image.save("data/result.tif").expect("Cant save image");
 
     // test_model::<MyAutodiffBackend>(&device);
 
-    // crate::training::train::<MyAutodiffBackend>(
-    //     "/tmp/guide",
-    //     crate::training::TrainingConfig::new(ModelConfig::new(),SgdConfig::new()),
-    //     device,
-    // );
+    crate::training::train::<MyAutodiffBackend>(
+        "/tmp/guide",
+        crate::training::TrainingConfig::new(ModelConfig::new(),SgdConfig::new()),
+        device,
+    );
 }
 
 #[allow(dead_code)]
@@ -50,19 +47,23 @@ fn test_model<B: Backend<FloatElem = f32>>(device: &Device<B>) {
         .swap_dims(2, 1) // [H, C, W]
         .swap_dims(1, 0); // [C, H, W]
 
+    let img_tensor = img_tensor.div(Tensor::<B,3,_>::full(Shape::new([3,572,572]), 255, &device));
     let input = img_tensor.reshape(Shape::new([1, 3, 572, 572]));
 
-    println!("{:?}", input.to_data().value);
+    let output = model.forward(input).reshape([1,388,388]);
 
-    let output = model.forward(input);
-    let val: Vec<u8> = output.into_data().value.iter().map(|f| *f as u8).collect();
+    println!("Output: {}",output);
+    let out_img = output.mul(Tensor::<B,3,_>::full(Shape::new([1,388,388]), 255, &device));
+    let img = CustomImage::from_bytes(out_img.to_data().value.iter().map(|f|*f as u8).collect()).expect("Cant create image");
+    img.save("data/result.tif").expect("Cant save image");
+    // let val: Vec<u8> = output.into_data().value.iter().map(|f| *f as u8).collect();
 
-    image::save_buffer(
-        "data/result.tif",
-        &val,
-        388,
-        388,
-        image::ExtendedColorType::L8,
-    )
-    .unwrap()
+    // image::save_buffer(
+    //     "data/result.tif",
+    //     &val,
+    //     388,
+    //     388,
+    //     image::ExtendedColorType::L8,
+    // )
+    // .unwrap()
 }
