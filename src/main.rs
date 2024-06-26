@@ -3,12 +3,10 @@ mod dataset;
 mod model;
 mod training;
 
-use std::path::Path;
 
 // use burn::backend::wgpu::*;
 use burn::backend::{wgpu::AutoGraphicsApi, Autodiff, Wgpu};
-use burn::module::Module;
-use burn::optim::{AdamConfig, RmsPropConfig, SgdConfig};
+use burn::optim::SgdConfig;
 use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Device, Shape, Tensor};
 use dataset::CustomImage;
@@ -23,10 +21,10 @@ fn main() {
     
 
     // test_model::<MyAutodiffBackend>(&device);
-
+    let training_config = crate::training::TrainingConfig::new(ModelConfig::new(),SgdConfig::new()); 
     crate::training::train::<MyAutodiffBackend>(
-        "/tmp/guide",
-        crate::training::TrainingConfig::new(ModelConfig::new(),SgdConfig::new()),
+        "temp",
+        training_config,
         device,
     );
 }

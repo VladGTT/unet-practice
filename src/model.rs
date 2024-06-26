@@ -1,12 +1,12 @@
 
 use burn::{
-    module::Devices, nn::{
+    nn::{
         conv::{Conv2d, Conv2dConfig},
         Relu,
     }, prelude::*, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::{Adaptor, LossInput}, TrainOutput, TrainStep, ValidStep}
 };
 use nn::{
-    conv::{ConvTranspose2d, ConvTranspose2dConfig}, loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig, CrossEntropyLoss}, pool::{MaxPool2d, MaxPool2dConfig}
+    conv::{ConvTranspose2d, ConvTranspose2dConfig}, loss::BinaryCrossEntropyLossConfig, pool::{MaxPool2d, MaxPool2dConfig}
 };
 
 use crate::data::DataBatch;

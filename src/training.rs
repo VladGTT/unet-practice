@@ -1,6 +1,6 @@
-use std::{iter, thread::sleep, time::Duration};
+use std::{thread::sleep, time::Duration};
 
-use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::transform::PartialDataset}, module::Module, nn::loss::{BinaryCrossEntropyLossConfig, HuberLossConfig, MseLoss}, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig, SgdConfig}, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::LossMetric, LearnerBuilder}};
+use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::transform::PartialDataset}, nn::loss::BinaryCrossEntropyLossConfig, optim::{GradientsParams, Optimizer, SgdConfig}, tensor::backend::AutodiffBackend};
 
 use crate::{data::DataBatcher, dataset::CustomDataset, model::{Model, ModelConfig}};
 
@@ -35,9 +35,11 @@ use crate::{data::DataBatcher, dataset::CustomDataset, model::{Model, ModelConfi
 pub struct TrainingConfig {
     pub model: ModelConfig,
     pub optimizer: SgdConfig,
-    #[config(default = 2)]
+    #[config(default = 1)]
     pub num_epochs: usize,
-    #[config(default = 5)]
+    #[config(default = 20)]
+    pub sleep_pause: u64,
+    #[config(default = 1)]
     pub batch_size: usize,
     #[config(default = 4)]
     pub num_workers: usize,
@@ -45,6 +47,7 @@ pub struct TrainingConfig {
     pub seed: u64,
     #[config(default = 1.0e-1)]
     pub learning_rate: f64,
+
 }
 
 fn create_artifact_dir(artifact_dir: &str) {
@@ -54,9 +57,9 @@ fn create_artifact_dir(artifact_dir: &str) {
 }
 
 pub fn train<B: AutodiffBackend<IntElem = i32>>(artifact_dir: &str,config: TrainingConfig, device: B::Device) {
-    create_artifact_dir("/tmp/guide");
+    create_artifact_dir(artifact_dir);
     config   
-        .save(format!("/tmp/guide/config.json"))
+        .save(format!("{artifact_dir}/config.json"))
         .expect("Config should be saved successfully");
 
     B::seed(config.seed);
@@ -93,20 +96,20 @@ pub fn train<B: AutodiffBackend<IntElem = i32>>(artifact_dir: &str,config: Train
             // println!("Target: {}",batch.targets.clone().int());
             let loss = lossfn.forward(output, batch.targets.int());
 
-            let outstr=format!("[Train - Epoch {} - Iteration {}] Loss {:.5}",epoch,iteration,loss.clone().into_scalar());
+            let outstr=format!("[Train - Epoch {epoch} - Iteration {iteration}] Loss {:.5}",loss.clone().into_scalar());
             iter_train_res.push(outstr.clone());
             println!("{}",outstr);
             
-            println!("Sleep 60sec");
-            sleep(Duration::from_secs(20));
+            println!("Sleep {}sec",config.sleep_pause*3);
+            sleep(Duration::from_secs(config.sleep_pause));
             
             let grads = GradientsParams::from_grads(loss.backward(), &model);
-            sleep(Duration::from_secs(20));
+            sleep(Duration::from_secs(config.sleep_pause));
  
             // Update the model using the optimizer.
             model = optim.step(config.learning_rate, model, grads);
             
-            sleep(Duration::from_secs(20));
+            sleep(Duration::from_secs(config.sleep_pause));
             
         }
         for (iteration, batch) in dataloader_test.iter().enumerate() {
@@ -115,14 +118,12 @@ pub fn train<B: AutodiffBackend<IntElem = i32>>(artifact_dir: &str,config: Train
             // println!("Target: {}",batch.targets.clone().int());
             let loss = lossfn.forward(output, batch.targets.int());
 
-            let outstr=format!("[Test - Epoch {} - Iteration {}] Loss {:.5}",epoch,iteration,loss.clone().into_scalar());
+            let outstr=format!("[Test - Epoch {epoch} - Iteration {iteration}] Loss {:.5}",loss.clone().into_scalar());
             iter_test_res.push(outstr.clone());
             println!("{}",outstr);
         }
+        model.clone().save("models/models").expect("model not saved");
     }
-
-
-    let _ = model.save("models/models").expect("model not saved");
 
 
     println!("============================= TRAIN SUMMARY =====================================");

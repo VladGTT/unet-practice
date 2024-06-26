@@ -3,7 +3,7 @@ use std::{
 };
 
 use burn::data::dataset::Dataset;
-use image::{io::Reader as ImageReader, DynamicImage, ImageBuffer, Luma, Pixel, Rgb};
+use image::{io::Reader as ImageReader, DynamicImage, ImageBuffer, Luma, Rgb};
 
 #[derive(Debug,Clone)]
 pub struct CustomDataset<I> {
