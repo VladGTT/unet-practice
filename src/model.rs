@@ -272,8 +272,8 @@ impl<B: Backend> Model<B> {
         targets: Tensor<B, 4>,
     ) -> SegmentationOutput<B> {
         let output = self.forward(images);
-        let loss = CrossEntropyLoss::new(None,&output.device())
-                .forward(output.clone(), targets.clone().int().);
+        let loss = BinaryCrossEntropyLossConfig::new().init(&output.device())
+                .forward(output.clone(), targets.clone().int());
         // let loss = CrossEntropyLoss::new(None, &output.device()).forward(output.clone(), targets.clone());
 
         SegmentationOutput::new(loss, output, targets)

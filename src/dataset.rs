@@ -1,9 +1,9 @@
 use std::{
-    io::{Cursor, Error}, iter::zip, ops::Range, path::Path
+    io::Error, iter::zip, ops::Range, path::Path
 };
 
 use burn::data::dataset::Dataset;
-use image::{codecs::png::PngDecoder, io::Reader as ImageReader, DynamicImage, ImageBuffer, Pixel, Rgb};
+use image::{io::Reader as ImageReader, DynamicImage, ImageBuffer, Pixel, Rgb};
 
 #[derive(Debug,Clone)]
 pub struct CustomDataset<I> {
@@ -41,9 +41,9 @@ impl<I: Send + Sync + Clone> Dataset<I> for CustomDataset<I> {
 
 impl CustomDataset<CustomDatasetItem> {
     //implementation assumes that images are contained in {path}/images and masks in {path}/masks
-    pub fn load(path: &str,shape: [u32;2],len: usize) -> Result<Self, Error> {
+    pub fn load(path: &str,len: usize) -> Result<Self, Error> {
         let mut list_images = Self::list_files_in_directory(Path::new(path).join("images").as_path())?;
-        let mut list_masks = Self::list_files_in_directory(Path::new(path).join("masks").as_path())?;
+        let mut list_masks = Self::list_files_in_directory(Path::new(path).join("gt").as_path())?;
 
         list_images.truncate(len);
         list_masks.truncate(len);
@@ -51,8 +51,8 @@ impl CustomDataset<CustomDatasetItem> {
         let mut data: Vec<CustomDatasetItem> = Vec::new();
         for (image, mask) in zip(list_images, list_masks) {
 
-            let image = CustomImage::open(&image)?.resize().resize_with_mirroring();
-            let mask = CustomImage::open(&mask)?.resize().into_grayscale();
+            let image = CustomImage::open(&image)?.resize_with_mirroring();
+            let mask = CustomImage::open(&mask)?;
 
             let new_item = CustomDatasetItem {
                 image: image.into_bytes(),
