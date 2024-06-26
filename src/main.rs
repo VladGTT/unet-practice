@@ -4,8 +4,10 @@ mod model;
 mod training;
 
 
+use burn::backend::wgpu::Vulkan;
 // use burn::backend::wgpu::*;
-use burn::backend::{wgpu::AutoGraphicsApi, Autodiff, Wgpu};
+use burn::backend::{Autodiff, Wgpu};
+use burn::grad_clipping::GradientClippingConfig;
 use burn::optim::SgdConfig;
 use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Device, Shape, Tensor};
@@ -14,14 +16,15 @@ use model::ModelConfig;
 
 fn main() {
     // type MyBackend = Wgpu<, f32, i32>;
-    type MyBackend = Wgpu<AutoGraphicsApi, f32, i32>;
+    type MyBackend = Wgpu<Vulkan, f32, i32>;
     type MyAutodiffBackend = Autodiff<MyBackend>;
 
     let device = burn::backend::wgpu::WgpuDevice::default();
-    
+    let optimizer = SgdConfig::new(); 
 
     // test_model::<MyAutodiffBackend>(&device);
-    let training_config = crate::training::TrainingConfig::new(ModelConfig::new(),SgdConfig::new()); 
+    let training_config = crate::training::TrainingConfig::new(ModelConfig::new(),optimizer)
+        .with_learning_rate(0.003); 
     crate::training::train::<MyAutodiffBackend>(
         "temp",
         training_config,

@@ -1,4 +1,6 @@
 
+use std::{time::Duration,thread::sleep};
+
 use burn::{
     nn::{
         conv::{Conv2d, Conv2dConfig},
@@ -271,11 +273,15 @@ impl<B: Backend> Model<B> {
         images: Tensor<B, 4>,
         targets: Tensor<B, 4>,
     ) -> SegmentationOutput<B> {
-        let output = self.forward(images);
+        let sleep_duration = 20;
+        sleep(Duration::from_secs(sleep_duration));
+        let output = self.forward(images);     
+
+        sleep(Duration::from_secs(sleep_duration));
         let loss = BinaryCrossEntropyLossConfig::new().init(&output.device())
                 .forward(output.clone(), targets.clone().int());
-        // let loss = CrossEntropyLoss::new(None, &output.device()).forward(output.clone(), targets.clone());
 
+        sleep(Duration::from_secs(sleep_duration));
         SegmentationOutput::new(loss, output, targets)
     }
 }
