@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-burn = { version = "0.13.2", features = ["train", "wgpu", "vision","ndarray","candle","fusion"] }
+burn = { version = "0.13.2", features = ["train", "wgpu", "vision","ndarray","fusion","tch"] }
 image = { version = "0.25.1", features = ["png"] }

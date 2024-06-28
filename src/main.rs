@@ -5,9 +5,7 @@ mod training;
 
 
 use burn::backend::wgpu::Vulkan;
-// use burn::backend::wgpu::*;
-use burn::backend::{Autodiff, Wgpu};
-use burn::grad_clipping::GradientClippingConfig;
+use burn::backend::{Autodiff, LibTorch, NdArray, Wgpu};
 use burn::optim::SgdConfig;
 use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Device, Shape, Tensor};
@@ -15,21 +13,26 @@ use dataset::CustomImage;
 use model::ModelConfig;
 
 fn main() {
-    // type MyBackend = Wgpu<, f32, i32>;
-    type MyBackend = Wgpu<Vulkan, f32, i32>;
-    type MyAutodiffBackend = Autodiff<MyBackend>;
+    
+    // type MyBackend = Wgpu<Vulkan, f32, i32>;
+    type Backend = Autodiff<LibTorch>;
+    let device = burn::backend::libtorch::LibTorchDevice::default();
 
-    let device = burn::backend::wgpu::WgpuDevice::default();
     let optimizer = SgdConfig::new(); 
 
-    // test_model::<MyAutodiffBackend>(&device);
     let training_config = crate::training::TrainingConfig::new(ModelConfig::new(),optimizer)
-        .with_learning_rate(0.003); 
-    crate::training::train::<MyAutodiffBackend>(
-        "temp",
+        .with_learning_rate(0.1)
+        .with_num_epochs(5)
+        .with_margin(20); 
+    
+    crate::training::train::<Backend>(
+        "temp/1",
         training_config,
         device,
     );
+
+    println!("Testing saved model");
+    test_model::<Backend>(&device.clone());
 }
 
 #[allow(dead_code)]
@@ -57,14 +60,4 @@ fn test_model<B: Backend<FloatElem = f32>>(device: &Device<B>) {
     let out_img = output.mul(Tensor::<B,3,_>::full(Shape::new([1,388,388]), 255, &device));
     let img = CustomImage::from_bytes(out_img.to_data().value.iter().map(|f|*f as u8).collect()).expect("Cant create image");
     img.save("data/result.tif").expect("Cant save image");
-    // let val: Vec<u8> = output.into_data().value.iter().map(|f| *f as u8).collect();
-
-    // image::save_buffer(
-    //     "data/result.tif",
-    //     &val,
-    //     388,
-    //     388,
-    //     image::ExtendedColorType::L8,
-    // )
-    // .unwrap()
 }

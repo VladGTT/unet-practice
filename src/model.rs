@@ -273,15 +273,15 @@ impl<B: Backend> Model<B> {
         images: Tensor<B, 4>,
         targets: Tensor<B, 4>,
     ) -> SegmentationOutput<B> {
-        let sleep_duration = 20;
-        sleep(Duration::from_secs(sleep_duration));
+        // let sleep_duration = 20;
+        // sleep(Duration::from_secs(sleep_duration));
         let output = self.forward(images);     
 
-        sleep(Duration::from_secs(sleep_duration));
+        // sleep(Duration::from_secs(sleep_duration));
         let loss = BinaryCrossEntropyLossConfig::new().init(&output.device())
                 .forward(output.clone(), targets.clone().int());
 
-        sleep(Duration::from_secs(sleep_duration));
+        // sleep(Duration::from_secs(sleep_duration));
         SegmentationOutput::new(loss, output, targets)
     }
 }

@@ -41,12 +41,12 @@ impl<I: Send + Sync + Clone> Dataset<I> for CustomDataset<I> {
 
 impl CustomDataset<CustomDatasetItem> {
     //implementation assumes that images are contained in {path}/images and masks in {path}/masks
-    pub fn load(path: &str,len: usize) -> Result<Self, Error> {
-        let mut list_images = Self::list_files_in_directory(Path::new(path).join("images").as_path())?;
-        let mut list_masks = Self::list_files_in_directory(Path::new(path).join("gt").as_path())?;
+    pub fn load(path: &str) -> Result<Self, Error> {
+        let list_images = Self::list_files_in_directory(Path::new(path).join("images").as_path())?;
+        let list_masks = Self::list_files_in_directory(Path::new(path).join("masks").as_path())?;
 
-        list_images.truncate(len);
-        list_masks.truncate(len);
+        // list_images.truncate(len);
+        // list_masks.truncate(len);
         
         let mut data: Vec<CustomDatasetItem> = Vec::new();
         for (image, mask) in zip(list_images, list_masks) {

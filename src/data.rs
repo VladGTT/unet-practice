@@ -46,21 +46,7 @@ impl<B: Backend> Batcher<CustomDatasetItem, DataBatch<B>> for DataBatcher<B> {
         }
 
 
-        // let images: Vec<Tensor<B,2>> = items
-        //     .into_iter()
-        //     .map(|item| Data::new(item.image,Shape::new([1280,720])))
-        //     .map(|data| Tensor::<B, 2>::from_data(data.convert(), &self.device))
-        //     .collect();
-
-        // let targets: Vec<Tensor<B,2>> = items
-        //     .into_iter()
-        //     .map(|item| Data::new(item.mask,Shape::new([1280,720])))
-        //     .map(|data| Tensor::<B, 2>::from_data(data.convert(), &self.device))
-        //     .collect();
-
-
-        // let images = Tensor::cat(images, 0).to_device(&self.device);
-        // let targets = Tensor::cat(targets, 0).to_device(&self.device);
+        
 
         DataBatch { 
             images: Tensor::stack(images, 0).to_device(&self.device),
