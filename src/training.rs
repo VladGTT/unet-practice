@@ -1,6 +1,6 @@
 use std::{io::Write, thread::sleep, time::Duration};
 
-use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::transform::PartialDataset}, nn::loss::BinaryCrossEntropyLossConfig, optim::{GradientsParams, Optimizer, SgdConfig}, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::{CpuTemperature, LossMetric}, LearnerBuilder, TrainStep, ValidStep}};
+use burn::{config::Config, data::{dataloader::DataLoaderBuilder, dataset::transform::PartialDataset}, nn::loss::BinaryCrossEntropyLossConfig, optim::{AdamConfig, GradientsParams, Optimizer, RmsPropConfig, SgdConfig}, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::{CpuTemperature, LossMetric}, LearnerBuilder, TrainStep, ValidStep}};
 
 use crate::{data::DataBatcher, dataset::CustomDataset, model::{Model, ModelConfig}};
 
@@ -158,12 +158,14 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .shuffle(config.seed)
         .num_workers(config.num_workers)
         .build(PartialDataset::new(dataset_train,config.start_index,config.start_index+config.margin));
+        // .build(dataset_train);
 
     let dataloader_test = DataLoaderBuilder::new(batcher_valid)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(PartialDataset::new(dataset_test,config.start_index+config.margin+1,config.start_index+2*config.margin));
+        .build(dataset_test);
+        // .build(PartialDataset::new(dataset_test,config.start_index+config.margin+1,config.start_index+2*config.margin));
 
 
 

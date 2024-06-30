@@ -4,9 +4,9 @@ mod model;
 mod training;
 
 
-use burn::backend::wgpu::Vulkan;
 use burn::backend::{Autodiff, LibTorch, NdArray, Wgpu};
-use burn::optim::SgdConfig;
+use burn::optim::decay::WeightDecayConfig;
+use burn::optim::{AdamConfig, RmsPropConfig, SgdConfig};
 use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Device, Shape, Tensor};
 use dataset::CustomImage;
@@ -18,12 +18,13 @@ fn main() {
     type Backend = Autodiff<LibTorch>;
     let device = burn::backend::libtorch::LibTorchDevice::default();
 
-    let optimizer = SgdConfig::new(); 
+    let optimizer = SgdConfig::new();
+        // .with_weight_decay(Some(WeightDecayConfig::new(0.5))); 
 
     let training_config = crate::training::TrainingConfig::new(ModelConfig::new(),optimizer)
         .with_learning_rate(0.1)
         .with_num_epochs(5)
-        .with_margin(20); 
+        .with_margin(150); 
     
     crate::training::train::<Backend>(
         "temp/1",
@@ -43,7 +44,7 @@ fn test_model<B: Backend<FloatElem = f32>>(device: &Device<B>) {
         .load("models/models.mpk", &device)
         .expect("Model not loaded");
 
-    let image = CustomImage::open("data/train/images/austin1.tif")
+    let image = CustomImage::open("data/test/images/austin12.tif")
         .unwrap()
         .resize_with_mirroring();
     let img_data = Data::new(image.into_bytes(), Shape::new([572, 572, 3]));
