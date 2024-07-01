@@ -1,5 +1,5 @@
 use std::{
-    io::Error, iter::zip, ops::Range, path::Path
+    io::Error, iter::zip, ops::Range, path::{Path, PathBuf}
 };
 
 use burn::data::dataset::Dataset;
@@ -41,9 +41,9 @@ impl<I: Send + Sync + Clone> Dataset<I> for CustomDataset<I> {
 
 impl CustomDataset<CustomDatasetItem> {
     //implementation assumes that images are contained in {path}/images and masks in {path}/masks
-    pub fn load(path: &str) -> Result<Self, Error> {
-        let list_images = Self::list_files_in_directory(Path::new(path).join("images").as_path())?;
-        let list_masks = Self::list_files_in_directory(Path::new(path).join("masks").as_path())?;
+    pub fn load(images_path: &Path,masks_path: &Path) -> Result<Self, Error> {
+        let list_images = Self::list_files_in_directory(images_path)?;
+        let list_masks = Self::list_files_in_directory(masks_path)?;
 
         // list_images.truncate(len);
         // list_masks.truncate(len);
@@ -64,7 +64,7 @@ impl CustomDataset<CustomDatasetItem> {
 
         Ok(Self { data: data })
     }
-    fn list_files_in_directory(dir: &Path) -> std::io::Result<Vec<String>> {
+    fn list_files_in_directory(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
         let mut file_list = Vec::new();
 
         if dir.is_dir() {
@@ -72,9 +72,7 @@ impl CustomDataset<CustomDatasetItem> {
                 let entry = entry?;
                 let path = entry.path();
                 if path.is_file() {
-                    if let Some(file_name) = path.to_str() {
-                        file_list.push(file_name.to_string());
-                    }
+                    file_list.push(path);
                 }
             }
         }
@@ -88,7 +86,7 @@ pub struct CustomImage{
 }
 
 impl CustomImage {
-    pub fn open(path: &str)->Result<Self, Error>{
+    pub fn open(path: &Path)->Result<Self, Error>{
         let img = ImageReader::open(path)?.decode().map_err(|err| Error::other(err))?; 
         Ok(Self{image: img})
     }
@@ -121,7 +119,7 @@ impl CustomImage {
         let new_img = DynamicImage::from(new_img).rotate270().to_rgb8();
         Self{image: DynamicImage::from(new_img)}
     }
-    pub fn save(self,path:&str)->Result<(),Error>{
+    pub fn save(self,path: &Path)->Result<(),Error>{
         self.image.save(path).map_err(|err|Error::other(err))
     }
     pub fn into_bytes(self)->Vec<u8>{

@@ -1,11 +1,11 @@
 
-use std::{time::Duration,thread::sleep};
+use std::{path::Path, thread::sleep, time::Duration};
 
 use burn::{
     nn::{
         conv::{Conv2d, Conv2dConfig},
         Relu,
-    }, prelude::*, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::{Adaptor, LossInput}, TrainOutput, TrainStep, ValidStep}
+    }, prelude::*, record::CompactRecorder, tensor::backend::AutodiffBackend, train::{metric::{AccuracyInput, Adaptor, LossInput}, TrainOutput, TrainStep, ValidStep}
 };
 use nn::{
     conv::{ConvTranspose2d, ConvTranspose2dConfig}, loss::BinaryCrossEntropyLossConfig, pool::{MaxPool2d, MaxPool2dConfig}
@@ -236,10 +236,10 @@ impl<B: Backend> Model<B> {
 }
 
 impl<B: Backend> Model<B> {
-    pub fn save(self,path: &str)->Result<(),()>{
+    pub fn save(self,path: &Path)->Result<(),()>{
         self.save_file(path, &CompactRecorder::new()).map_err(|_|())
     }
-    pub fn load(self,path: &str,device: &Device<B>)->Result<Self,()>{
+    pub fn load(self,path: &Path,device: &Device<B>)->Result<Self,()>{
         self.load_file(path,&CompactRecorder::new(),device).map_err(|_|())
     }
 }
