@@ -22,14 +22,13 @@ use model::ModelConfig;
 use training::TrainingConfig;
 
 fn main() {
-    // type MyBackend = Wgpu<Vulkan, f32, i32>;
     type Backend = Autodiff<LibTorch>;
     let device = burn::backend::libtorch::LibTorchDevice::default();
 
     let training_config = crate::training::TrainingConfig::new(
         ModelConfig::new(),
         SgdConfig::new(),
-        ExponentialLrSchedulerConfig::new(0.3, 0.01),
+        ExponentialLrSchedulerConfig::new(0.3, 1.0),
         (
             PathBuf::from("./data/train/images"),
             PathBuf::from("./data/train/masks"),
@@ -41,7 +40,7 @@ fn main() {
         PathBuf::from("./temp/1"),
     )
     .with_num_epochs(5)
-    .with_margin(50);
+    .with_margin(150);
 
     crate::training::train::<Backend>(training_config.clone(), device);
 }
@@ -73,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_model() {
-        type Backend = Autodiff<LibTorch>;
+        type Backend = LibTorch;
         let device = burn::backend::libtorch::LibTorchDevice::default();
 
         let config = TestConfig::new(
@@ -84,30 +83,35 @@ mod tests {
             ),
             PathBuf::from("./temp/1"),
             PathBuf::from("./results"),
-        )
-        .with_num_epochs(5);
+        );
 
         Backend::seed(config.seed);
 
         let model: model::Model<Backend> = ModelConfig::new().init(&device);
         let model = model
-            .load(config.artifact_dir.join("models.mpk").as_path(), &device)
+            .load(config.artifact_dir.join("model.mpk").as_path(), &device)
             .expect("Model not loaded");
 
         let batcher_valid = DataBatcher::<Backend>::new(device.clone());
 
+        println!("Loading dataset...");
         let dataset_test = CustomDataset::load(
             config.test_data_path.0.as_path(),
             config.test_data_path.1.as_path(),
-        )
+        )       
         .expect("Cant load test data");
+
+        println!("Dataset loaded");
+
         let dataloader_test = DataLoaderBuilder::new(batcher_valid)
             .batch_size(config.batch_size)
             .shuffle(config.seed)
             .num_workers(config.num_workers)
             .build(dataset_test);
 
+        create_artifact_dir(&config.output_dir);
         for (iteration, batch) in dataloader_test.iter().enumerate() {
+            println!("Iter-{iteration}");
             let output = ValidStep::step(&model, batch);
 
             let out_img = output
@@ -125,5 +129,10 @@ mod tests {
             img.save(PathBuf::from(config.output_dir.join(format!("result-{iteration}.tif"))).as_path())
                 .expect("Cant save image");
         }
+    }
+    fn create_artifact_dir(artifact_dir: &Path) {
+        // Remove existing artifacts before to get an accurate learner summary
+        std::fs::remove_dir_all(artifact_dir).ok();
+        std::fs::create_dir_all(artifact_dir).ok();
     }
 }
